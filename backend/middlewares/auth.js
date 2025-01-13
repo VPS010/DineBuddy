@@ -9,7 +9,15 @@ const protect = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded.id;
+
+        // Add user and restaurant ID from the decoded token to the request object
+       
+        req.user = {
+            id: decoded.id,
+            restaurantId: decoded.restaurantId || null, // Include restaurantId if present
+        };
+       console.log(req.user);
+       console.log(req.user.restaurantId);
         next();
     } catch (error) {
         return res.status(401).json({ error: 'Token is not valid' });

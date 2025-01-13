@@ -4,7 +4,6 @@ const { signupAdmin,
     loginAdmin,
     getAdminProfile,
     updateAdminProfile,
-    addRestaurant,
     getRestaurant,
     updateRestaurant,
     addMenuItem,
@@ -22,23 +21,22 @@ const { signupAdmin,
 const router = express.Router();
 
 router.post('/signup', signupAdmin);
-router.post('/login', loginAdmin);
+router.post('/signin', loginAdmin);
 router.get('/profile',protect, getAdminProfile);
 router.put('/profile',protect, updateAdminProfile);
 
 
 // Restaurant Routes
-router.post('/restaurant/register', protect, addRestaurant); // Restaurant signup
-router.get('/restaurant', protect, getRestaurant);         // Get restaurant info
 router.put('/restaurant', protect, updateRestaurant);      // Update restaurant info
+router.get('/restaurant', protect, getRestaurant);         // Get restaurant info
 
-router.post('/menu', addMenuItem);
-// router.get('/menu', getMenu);
-// router.get('/menu/:id', getMenuItem);
-// router.put('/menu/:id', updateMenuItem);
-// router.delete('/menu/:id', deleteMenuItem);
+router.post('/menu',protect, addMenuItem);
+router.get('/menu',protect, getMenu);
+router.get('/menu/:id',protect, getMenuItem);
+router.put('/menu/:id',protect, updateMenuItem);
+router.delete('/menu/:id',protect, deleteMenuItem);
 
-// router.post('/qr/generate', generateQRCode);
+router.post('/qr/generate',protect, generateQRCode);
 
 // router.get('/orders', getOrders);
 // router.get('/order/:id', getOrder);

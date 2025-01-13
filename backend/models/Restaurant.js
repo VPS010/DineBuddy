@@ -5,24 +5,24 @@ const restaurantSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    location: {
-        type: String,
-        required: true,
-    },
-    contact: {
-        type: String,
-        required: true,
-    },
-    description: {
-        type: String,
-        required: true,
-    },
-    admin: {
+    adminId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Admin', // Reference to the Admin model
         required: true,
     },
-}, { timestamps: true });
+    address: {
+        type: String,
+        required: null,
+    },
+    contact: {
+        type: String,
+        required: null,
+    },
+    description: {
+        type: String,
+        required: null,
+    },
+});
 
 const Restaurant = mongoose.model('Restaurant', restaurantSchema);
 

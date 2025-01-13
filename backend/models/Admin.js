@@ -26,13 +26,15 @@ const adminSchema = new mongoose.Schema({
     restaurant: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Restaurant', // Assuming Restaurant model exists
-        required: true, // Admin should be associated with a restaurant
+        required: null, // Admin should be associated with a restaurant
     },
     profileImage: {
         type: String, // URL of the profile image
         default: null,
     },
 });
+
+
 
 
 const Admin = mongoose.model('Admin', adminSchema);
