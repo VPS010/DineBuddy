@@ -7,6 +7,9 @@ import AdminLogin from './pages/Adminlogin';
 import AdminSignup from './pages/AdminSignup';
 import DashboardPage from './pages/DashboardPage';
 import MenuPage from './pages/MenuPage';
+import MenuPage2 from './pages/MenuPage2';
+import MenuPage3 from './pages/MenuPage3';
+
 // import MenuPage from './pages/MenuPage';
 // import CartPage from './pages/CartPage';
 // import LoginPage from './pages/LoginPage';
@@ -39,6 +42,8 @@ const App = () => {
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/dashboard" element={<DashboardPage />} />
                 <Route path="/admin/menu" element={<MenuPage />} />
+                <Route path="/admin/menu2" element={<MenuPage2 />} />
+                <Route path="/admin/menu3" element={<MenuPage3 />} />
                 
 
                 {/* Customer Routes */}

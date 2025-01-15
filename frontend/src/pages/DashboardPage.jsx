@@ -13,11 +13,11 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import Dashboard from "../big_components/Dashboard";
-import AdminProfile from "../big_components/AdminProfile";
-import MenuManagement from "../big_components/MenuManagement";
-import KitchenScreen from "../big_components/KitchenScreen";
-import AdminOrdersPage from "../big_components/Orders";
+import Dashboard from "../DashboardComponents/Dashboard";
+import AdminProfile from "../DashboardComponents/AdminProfile";
+import MenuManagement from "../DashboardComponents/MenuManagement";
+import KitchenScreen from "../DashboardComponents/KitchenScreen";
+import AdminOrdersPage from "../DashboardComponents/Orders";
 
 const DashboardPage = () => {
   const navigate = useNavigate();

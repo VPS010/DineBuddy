@@ -68,7 +68,7 @@ const AdminOrdersPage = () => {
       specialRequests: 'Extra sauce on burger'
     },
     // Add more mock orders as needed
-  ];
+  ];          
 
   // Summary calculations
   const summary = {
@@ -157,7 +157,7 @@ const AdminOrdersPage = () => {
         </div>
         <div className="bg-white p-4 rounded shadow">
           <h3 className="font-bold">Total Revenue</h3>
-          <p className="text-2xl">${summary.totalRevenue.toFixed(2)}</p>
+          <p className="text-2xl">₹{summary.totalRevenue.toFixed(2)}</p>
         </div>
         <div className="bg-white p-4 rounded shadow">
           <h3 className="font-bold">Completed Orders</h3>
@@ -196,7 +196,7 @@ const AdminOrdersPage = () => {
                 </td>
                 <td className="p-4">{order.tableNo}</td>
                 <td className="p-4">{order.items.join(', ')}</td>
-                <td className="p-4">${order.totalPrice.toFixed(2)}</td>
+                <td className="p-4">₹{order.totalPrice.toFixed(2)}</td>
                 <td className="p-4">
                   <span className={`px-2 py-1 rounded ${
                     order.status === 'Completed' ? 'bg-green-100 text-green-800' :
@@ -315,5 +315,5 @@ const AdminOrdersPage = () => {
     </div>
   );
 };
-
+          
 export default AdminOrdersPage;
