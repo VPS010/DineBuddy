@@ -1,8 +1,7 @@
-import React, { useState, useRef } from 'react';
-import AdminEdit from './AdminEdit';
-import RestaurantEdit from './RestaurantEdit';
-import { Camera, X, Check, Loader2 } from "lucide-react";
-
+import React, { useState, useRef, useEffect } from "react";
+import axios from "axios";
+import AdminEdit from "./AdminEdit";
+import RestaurantEdit from "./RestaurantEdit";
 
 const AdminProfile = () => {
   const [isEditingAdmin, setIsEditingAdmin] = useState(false);
@@ -10,28 +9,69 @@ const AdminProfile = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [error, setError] = useState("");
   const fileInputRef = useRef(null);
 
   const [profile, setProfile] = useState({
-    name: "John Smith",
-    email: "john.smith@serveit.com",
-    phone: "+1 (555) 123-4567",
-    role: "Restaurant Admin",
+    name: "",
+    email: "",
+    phone: "",
+    role: "",
     avatar: "/api/placeholder/150/150",
   });
 
   const [restaurant, setRestaurant] = useState({
-    name: "ServeIt Downtown",
-    address: "delhi-6 ram nagar",
-    contact: "987-654-3210",
-    description: "A newly updated description.",
-    businessHours: {
-      Monday: "9:00 AM - 8:00 PM",
-      Tuesday: "9:00 AM - 8:00 PM",
-      Friday: "10:00 AM - 11:00 PM",
-    },
-    memberSince: "2025-01-15T11:22:10.044Z",
+    name: "",
+    address: "",
+    contact: "",
+    description: "",
+    businessHours: {},
+    memberSince: "",
   });
+
+  const token = localStorage.getItem("authorization");
+
+  const api = axios.create({
+    baseURL: "http://localhost:3000",
+    headers: {
+      Authorization: token,
+    },
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const adminResponse = await api.get("/api/v1/admin/profile");
+        const adminData = adminResponse.data.admin;
+        setProfile({
+          name: adminData.name,
+          email: adminData.email,
+          phone: adminData.phone,
+          role: "Restaurant Admin",
+          avatar: adminData.avatar || "/api/placeholder/150/150",
+        });
+
+        const restaurantResponse = await api.get("/api/v1/admin/restaurant");
+        const restaurantData = restaurantResponse.data.restaurant;
+        setRestaurant({
+          name: restaurantData.name,
+          address: restaurantData.address,
+          contact: restaurantData.contact,
+          description: restaurantData.description,
+          businessHours: restaurantData.businessHours,
+          memberSince: restaurantData.memberSince,
+        });
+      } catch (err) {
+        setError(err.response?.data?.error || "Failed to fetch data");
+        console.error("Error fetching data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -44,42 +84,112 @@ const AdminProfile = () => {
 
   const handleAdminSubmit = async (e, formData) => {
     e.preventDefault();
+
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      // Match the server's expected fields
+      const dataToSend = {
+        name: formData.name,
+        email: formData.email,
+        // Only include password if it's provided
+        ...(formData.password && { password: formData.password }),
+      };
 
-    setProfile({
-      ...profile,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-    });
+      // Validate that at least one field is provided
+      if (!dataToSend.name && !dataToSend.email && !dataToSend.password) {
+        setError("At least one field (name, email, password) is required");
+        setLoading(false);
+        return;
+      }
 
-    if (previewImage) {
-      setProfile((prev) => ({ ...prev, avatar: previewImage }));
+      // Handle avatar separately if needed
+      if (previewImage) {
+        const formDataWithAvatar = new FormData();
+        if (dataToSend.name) formDataWithAvatar.append("name", dataToSend.name);
+        if (dataToSend.email)
+          formDataWithAvatar.append("email", dataToSend.email);
+        if (dataToSend.password)
+          formDataWithAvatar.append("password", dataToSend.password);
+
+        const avatarFile = await fetch(previewImage).then((r) => r.blob());
+        formDataWithAvatar.append("avatar", avatarFile);
+
+        const response = await api.put(
+          "/api/v1/admin/profile",
+          formDataWithAvatar,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        setProfile({
+          ...profile,
+          ...response.data.admin,
+        });
+      } else {
+        // If no avatar, send JSON data
+        const response = await api.put("/api/v1/admin/profile", dataToSend, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        setProfile({
+          ...profile,
+          ...response.data.admin,
+        });
+      }
+
+      setSuccessMessage("Admin profile updated successfully!");
+      setIsEditingAdmin(false);
+    } catch (err) {
+      console.error("Error details:", err.response?.data);
+      setError(err.response?.data?.error || "Failed to update admin profile");
+    } finally {
+      setLoading(false);
+      setTimeout(() => {
+        setSuccessMessage("");
+        setError("");
+      }, 3000);
     }
-
-    setSuccessMessage("Admin profile updated successfully!");
-    setLoading(false);
-    setIsEditingAdmin(false);
-    setTimeout(() => setSuccessMessage(""), 3000);
   };
 
   const handleRestaurantSubmit = async (e, formData) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const response = await api.put("/api/v1/admin/restaurant", formData);
 
-    setRestaurant(formData);
-
-    setSuccessMessage("Restaurant details updated successfully!");
-    setLoading(false);
-    setIsEditingRestaurant(false);
-    setTimeout(() => setSuccessMessage(""), 3000);
+      setRestaurant(response.data.restaurant);
+      setSuccessMessage("Restaurant details updated successfully!");
+      setIsEditingRestaurant(false);
+    } catch (err) {
+      setError(
+        err.response?.data?.error || "Failed to update restaurant details"
+      );
+      console.error("Error updating restaurant details:", err);
+    } finally {
+      setLoading(false);
+      setTimeout(() => {
+        setSuccessMessage("");
+        setError("");
+      }, 3000);
+    }
   };
+
+  if (loading && !profile.name) {
+    return (
+      <div className="min-h-screen bg-beige-50 flex items-center justify-center">
+        <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-beige-50">
-      <div className="max-w-4xl md:flex bg-gray-50 rounded-md mx-auto p-6">
+      <div>
         {successMessage && (
           <div className="mb-6 p-4 bg-green-100 text-green-800 rounded-lg flex items-center">
             <span className="w-5 h-5 mr-2">✓</span>
@@ -87,6 +197,14 @@ const AdminProfile = () => {
           </div>
         )}
 
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 text-red-800 rounded-lg flex items-center">
+            <span className="w-5 h-5 mr-2">⚠</span>
+            {error}
+          </div>
+        )}
+      </div>
+      <div className="max-w-6xl justify-center md:flex bg-gray-50 rounded-md mx-auto p-6">
         <AdminEdit
           profile={profile}
           isEditing={isEditingAdmin}

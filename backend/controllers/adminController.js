@@ -134,7 +134,7 @@ const updateAdminProfile = async (req, res) => {
     try {
         const adminId = req.user.id;  // Get admin ID from the auth middleware
 
-        const { name, email, password } = req.body;
+        const { name, email, password} = req.body;
 
         // Validate input data
         if (!name && !email && !password) {
