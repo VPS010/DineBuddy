@@ -172,9 +172,10 @@ const updateAdminProfile = async (req, res) => {
 };
 
 
+
 const updateRestaurant = async (req, res) => {
     try {
-        const { name, location, contact, description } = req.body;
+        const { name, address, contact, description, businessHours } = req.body;
 
         // Check if the restaurant exists for the logged-in admin
         const restaurant = await Restaurant.findOne({ adminId: req.user.id });
@@ -184,9 +185,14 @@ const updateRestaurant = async (req, res) => {
 
         // Update the restaurant details
         if (name) restaurant.name = name;
-        if (location) restaurant.location = location;
+        if (address) restaurant.address = address;
         if (contact) restaurant.contact = contact;
         if (description) restaurant.description = description;
+
+        // Update business hours if provided
+        if (businessHours) {
+            restaurant.businessHours = new Map(Object.entries(businessHours));
+        }
 
         // Save the updated restaurant details
         await restaurant.save();
@@ -196,9 +202,11 @@ const updateRestaurant = async (req, res) => {
             restaurant: {
                 id: restaurant._id,
                 name: restaurant.name,
-                location: restaurant.location,
+                address: restaurant.address,
                 contact: restaurant.contact,
                 description: restaurant.description,
+                businessHours: Object.fromEntries(restaurant.businessHours), // Convert Map to object for response
+                memberSince: restaurant.memberSince,
             },
         });
     } catch (error) {
@@ -225,9 +233,11 @@ const getRestaurant = async (req, res) => {
             restaurant: {
                 id: restaurant._id,
                 name: restaurant.name,
-                location: restaurant.location,
+                address: restaurant.address,
                 contact: restaurant.contact,
                 description: restaurant.description,
+                businessHours: Object.fromEntries(restaurant.businessHours), // Convert Map to object
+                memberSince: restaurant.memberSince,
             },
         });
     } catch (error) {
@@ -235,7 +245,6 @@ const getRestaurant = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while retrieving the restaurant details.' });
     }
 };
-
 
 
 const addMenuItem = async (req, res) => {
@@ -409,8 +418,8 @@ const generateQRCode = async (req, res) => {
 
 
 module.exports = {
-    signupAdmin,loginAdmin,getAdminProfile, updateAdminProfile, 
-    getRestaurant, updateRestaurant, 
-    addMenuItem, getMenu, getMenuItem, updateMenuItem,deleteMenuItem,
+    signupAdmin, loginAdmin, getAdminProfile, updateAdminProfile,
+    getRestaurant, updateRestaurant,
+    addMenuItem, getMenu, getMenuItem, updateMenuItem, deleteMenuItem,
     generateQRCode
 };

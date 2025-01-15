@@ -1,18 +1,31 @@
 const express = require('express')
 const dotenv = require('dotenv');
-const app= express()
+const app = express()
 const mainRouter = require('./routes/index')
 const connectDB = require('./config/dbconnection');
+const cors = require('cors');
+
+
+
+app.use(
+    cors({
+        // origin: "http://localhost:5173", // Replace with your frontend origin
+        // methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+        // credentials: true, // If you're using cookies or credentials
+    })
+);
 
 
 
 dotenv.config();
 app.use(express.json());
-app.use("/api/v1",mainRouter)
+app.use("/api/v1", mainRouter)
+
+
 
 connectDB();
 
-app.get("/",(req,res)=>{
+app.get("/", (req, res) => {
     res.send("ya server is UP!")
 })
 
@@ -23,6 +36,6 @@ app.use((err, req, res, next) => {
 });
 
 
-app.listen(3000,()=>{
+app.listen(3000, () => {
     console.log("server is running at Port 3000");
 })

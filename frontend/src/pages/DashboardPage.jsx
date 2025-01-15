@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   Menu,
-  Search,
   Bell,
   ChevronDown,
   Home,
@@ -14,7 +13,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import Dashboard from "../DashboardComponents/Dashboard";
-import AdminProfile from "../DashboardComponents/AdminProfile";
+import AdminProfile from "../DashboardComponents/AdminProfile/mainAdminProfile";
 import MenuManagement from "../DashboardComponents/MenuManagement";
 import KitchenScreen from "../DashboardComponents/KitchenScreen";
 import AdminOrdersPage from "../DashboardComponents/Orders";

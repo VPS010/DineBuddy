@@ -2,9 +2,12 @@ import { useState } from "react";
 import { Button } from "../components/Button";
 import { InputBox } from "../components/InputBox";
 import { WarningLink } from "../components/WarningLink";
+import axios from 'axios';
+import { useNavigate } from "react-router-dom";
 
 
 const AdminLogin = () => {
+  const navigate = useNavigate();
 
   const [user, setUser] = useState({
     email: "",
@@ -19,9 +22,30 @@ const AdminLogin = () => {
     }));
   };
 
-  const SignupHandler = (e) => {
-  e.preventDefault();
-  console.log(user);
+  
+  const LoginHandler = (e) => {
+    e.preventDefault();
+
+    if (!user.email || !user.password) {
+      alert("Email and password are required.");
+      return;
+    }
+
+    // Send login request to the backend
+    axios
+      .post("http://localhost:3000/api/v1/admin/signin", user)
+      .then((result) => {
+        localStorage.setItem("authorization", `Bearer ${result.data.token}`); // Save JWT
+        navigate("/admin/dashboard"); // Redirect to dashboard or another page
+        setUser({
+          email: "",
+          password: "",
+        });
+      })
+      .catch((error) => {
+        console.log("Login error:", error.response?.data?.error || error.message);
+        alert("Invalid email or password.");
+      });
   };
 
   return (
@@ -88,7 +112,7 @@ const AdminLogin = () => {
                       Forgot password?
                     </a>
                   </div>
-                  <Button label={"Sign in"} onClick={SignupHandler} />
+                  <Button label={"Sign in"} onClick={LoginHandler} />
                   <WarningLink
                     label={"Don’t have an account yet?"}
                     buttonText={"Sign up"}

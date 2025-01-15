@@ -3,6 +3,7 @@ import { Button } from "../components/Button";
 import { InputBox } from "../components/InputBox";
 import { WarningLink } from "../components/WarningLink";
 import { useNavigate } from "react-router-dom";
+import axios from 'axios'
 
 const AdminSignup = () => {
   const navigate = useNavigate();
@@ -11,9 +12,8 @@ const AdminSignup = () => {
     email: "",
     name: "",
     password: "",
-    phone:"",
-    restaurantName:""
-
+    phone: "",
+    restaurantName: "",
   });
 
   const InputHandler = (e) => {
@@ -24,13 +24,46 @@ const AdminSignup = () => {
       [name]: value,
     }));
   };
-
-  const SignupHandler = (e) => {
+  const SignupHandler = async (e) => {
     e.preventDefault();
 
-    console.log("Inputs");
-    console.log(user);
+    // Basic validation
+    const { email, name, password, phone, restaurantName } = user;
+    if (!email || !name || !password || !phone || !restaurantName) {
+      alert("All fields are required.");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/api/v1/admin/signup",
+        user
+      );
+      const token = response.data.token;
+
+      // Save token to localStorage
+      localStorage.setItem("authorization", `Bearer ${token}`);
+
+      // Navigate to dashboard
+      navigate("/admin/dashboard");
+
+      // Clear form
+      setUser({
+        email: "",
+        name: "",
+        password: "",
+        phone: "",
+        restaurantName: "",
+      });
+    } catch (error) {
+      console.error(
+        "Signup error:",
+        error.response?.data?.message || error.message
+      );
+      alert("Signup failed. Please try again.");
+    }
   };
+
   return (
     <>
       <section className="flex bg-gray-50 align-middle items-center justify-center ">
