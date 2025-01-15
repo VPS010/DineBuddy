@@ -14,9 +14,10 @@ import { useNavigate } from "react-router-dom";
 
 import Dashboard from "../DashboardComponents/Dashboard";
 import AdminProfile from "../DashboardComponents/AdminProfile/mainAdminProfile";
-import MenuManagement from "../DashboardComponents/MenuManagement";
+import MenuManagement from "../DashboardComponents/AdminMenu/MenuManagement";
 import KitchenScreen from "../DashboardComponents/KitchenScreen";
 import AdminOrdersPage from "../DashboardComponents/Orders";
+import QRCodeGenerator from "../DashboardComponents/QRcodes";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -37,7 +38,9 @@ const DashboardPage = () => {
       >
         <div className="p-4 flex items-center justify-between">
           <h1
-            className={`font-bold text-4xl text-emerald-800 ${!isSidebarOpen && "hidden"}`}
+            className={`font-bold text-4xl text-emerald-800 ${
+              !isSidebarOpen && "hidden"
+            }`}
           >
             SERVIT
           </h1>
@@ -80,14 +83,36 @@ const DashboardPage = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
+
+
         {/* Header */}
-        <header className="bg-white shadow-sm">
+
+        <header className="bg-white  shadow-sm">
           <div className="flex items-center justify-between p-4">
-            <div><h1
-            className={`font-bold text-4xl text-emerald-800 ${isSidebarOpen && "hidden"}`}
-          >
-            SERVIT
-          </h1></div>
+            <div className="flex justify-between">
+              <div>
+                <h1
+                  className={`font-bold text-4xl text-emerald-800 ${
+                    isSidebarOpen && "hidden"
+                  }`}
+                >
+                  SERVIT
+                </h1>
+              </div>
+              <div className="bg-gray-600 h-full rounded-md mx-5 ml-9">
+                <button
+                  onClick={() =>
+                    setActiveSection(
+                      activeSection === "dashboard" ? "generateQR" : "dashboard"
+                    )
+                  }
+                  className="text-gray-100 font-medium px-5 p-2 bg-green-800 rounded-md hover:bg-green-700 group relative transition-all duration-300overflow-hidden focus:ring-1 focus: outline-none focus:ring-slate-600 text-sm text-center transform active:scale-95 transform-all ease-in-out "
+                >
+                  Get QR Codes
+                </button>
+              </div>
+            </div>
+
             <div className="flex items-center gap-4">
               <button className="relative p-2 hover:bg-gray-100 rounded-lg">
                 <Bell size={20} />
@@ -114,6 +139,7 @@ const DashboardPage = () => {
           {activeSection === "menu" && <MenuManagement />}
           {activeSection === "profile" && <AdminProfile />}
           {activeSection === "settings" && <Settings />}
+          {activeSection === "generateQR" && <QRCodeGenerator />}
         </div>
       </div>
     </div>

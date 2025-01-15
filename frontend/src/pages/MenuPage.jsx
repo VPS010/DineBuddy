@@ -14,7 +14,6 @@ const menuItems = [
       category: "Main Course",
       price: 24.99,
       description: "Fresh Atlantic salmon grilled to perfection with herbs",
-      ingredients: ["Salmon", "Herbs", "Lemon", "Olive Oil"],
       image: "/api/placeholder/300/200",
       dietary: ["Gluten-Free"],
       isVeg:true,

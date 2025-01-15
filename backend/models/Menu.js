@@ -21,28 +21,37 @@ const menuSchema = new mongoose.Schema({
         required: true,
     },
     category: {
-        type: String,
+        type: String, // Accept any string as a category
         required: true,
-        enum: ['Appetizers', 'Mains', 'Desserts', 'Beverages', 'Specials'], // Add more as needed
+        trim: true,
     },
     image: {
         type: String, // URL for the image
         default: null,
     },
+    dietary: {
+        type: [String],
+        default: [],
+    },
+    isVeg: {
+        type: Boolean,
+        required: true,
+    },
+    spiceLevel: {
+        type: String,
+        enum: ['Mild', 'Medium', 'Spicy'],
+        default: 'Medium',
+    },
+    popularity: {
+        type: [String],
+        default: [],
+    },
     isAvailable: {
         type: Boolean,
         default: true,
-    },
-    tags: {
-        type: [String], // e.g., ["Best Seller", "Today's Special"]
-        default: [],
-    },
-    ingredients: {
-        type: [String], // List of ingredients
-        default: [],
     },
 });
 
 const Menu = mongoose.model('Menu', menuSchema);
 
-module.exports ={ Menu};
+module.exports = { Menu };

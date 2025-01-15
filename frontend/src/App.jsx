@@ -7,7 +7,8 @@ import AdminLogin from './pages/Adminlogin';
 import AdminSignup from './pages/AdminSignup';
 import DashboardPage from './pages/DashboardPage';
 import MenuPage from './pages/MenuPage';
-import AdminProfile from './DashboardComponents/AdminProfile/AdminProfile2';
+import MenuManagement from './DashboardComponents/MenuManagement';
+import QRCodeGenerator from './DashboardComponents/QRcodes';
 // import MenuPage from './pages/MenuPage';
 // import CartPage from './pages/CartPage';
 // import LoginPage from './pages/LoginPage';
@@ -38,8 +39,9 @@ const App = () => {
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/signup" element={<AdminSignup/>} />
                 <Route path="/admin/dashboard" element={<DashboardPage />} />
-                <Route path="/admin/menu" element={<MenuPage/>} />
-                <Route path="/admin/p" element={<AdminProfile/>} />
+                <Route path="/user/menu" element={<MenuPage/>} />
+                <Route path="/admin/p" element={<MenuManagement/>} />
+                <Route path="/admin/q" element={<QRCodeGenerator/>} />
                 
 
                 {/* Customer Routes */}

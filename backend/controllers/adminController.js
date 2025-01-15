@@ -134,7 +134,7 @@ const updateAdminProfile = async (req, res) => {
     try {
         const adminId = req.user.id;  // Get admin ID from the auth middleware
 
-        const { name, email, password} = req.body;
+        const { name, email, password } = req.body;
 
         // Validate input data
         if (!name && !email && !password) {
@@ -246,13 +246,34 @@ const getRestaurant = async (req, res) => {
     }
 };
 
-
 const addMenuItem = async (req, res) => {
     try {
-        const { name, description, price, category, image, isAvailable, tags, ingredients } = req.body;
+        const {
+            name,
+            description,
+            price,
+            category,
+            image,
+            isAvailable,
+            dietary,
+            isVeg,
+            spiceLevel,
+            popularity,
+        } = req.body;
 
-        if (!name || !description || !price || !category) {
-            return res.status(400).json({ error: 'Name, description, price, and category are required fields.' });
+        // Check for required fields
+        if (!name || !description || !price || !category || typeof isVeg === 'undefined' || !spiceLevel) {
+            return res.status(400).json({
+                error: 'Name, description, price, category, isVeg, and spiceLevel are required fields.',
+            });
+        }
+
+        // Validate spice level
+        const validSpiceLevels = ['Mild', 'Medium', 'Spicy'];
+        if (!validSpiceLevels.includes(spiceLevel)) {
+            return res.status(400).json({
+                error: `Invalid spice level. Valid values are: ${validSpiceLevels.join(', ')}.`,
+            });
         }
 
         // Create a new menu item
@@ -263,11 +284,14 @@ const addMenuItem = async (req, res) => {
             price,
             category,
             image,
-            isAvailable,
-            tags,
-            ingredients,
+            isAvailable: isAvailable ?? true, // Default to true if not provided
+            dietary: dietary || [], // Default to an empty array
+            isVeg,
+            spiceLevel,
+            popularity: popularity || [], // Default to an empty array
         });
 
+        // Send response
         res.status(201).json({
             message: 'Menu item added successfully.',
             menuItem: {
@@ -278,8 +302,10 @@ const addMenuItem = async (req, res) => {
                 category: newMenuItem.category,
                 image: newMenuItem.image,
                 isAvailable: newMenuItem.isAvailable,
-                tags: newMenuItem.tags,
-                ingredients: newMenuItem.ingredients,
+                dietary: newMenuItem.dietary,
+                isVeg: newMenuItem.isVeg,
+                spiceLevel: newMenuItem.spiceLevel,
+                popularity: newMenuItem.popularity,
             },
         });
     } catch (error) {
@@ -337,17 +363,37 @@ const getMenuItem = async (req, res) => {
     }
 };
 
-
 const updateMenuItem = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, price, category, image, isAvailable, tags, ingredients } = req.body;
+        const {
+            name,
+            description,
+            price,
+            category,
+            image,
+            isAvailable,
+            dietary,
+            isVeg,
+            spiceLevel,
+            popularity,
+        } = req.body;
 
         // Find the menu item by its ID
         const menuItem = await Menu.findById(id);
 
         if (!menuItem) {
             return res.status(404).json({ error: 'Menu item not found.' });
+        }
+
+        // Validate spice level if provided
+        if (spiceLevel) {
+            const validSpiceLevels = ['Mild', 'Medium', 'Spicy'];
+            if (!validSpiceLevels.includes(spiceLevel)) {
+                return res.status(400).json({
+                    error: `Invalid spice level. Valid values are: ${validSpiceLevels.join(', ')}.`,
+                });
+            }
         }
 
         // Update the menu item details with the provided data
@@ -357,8 +403,10 @@ const updateMenuItem = async (req, res) => {
         if (category) menuItem.category = category;
         if (image) menuItem.image = image;
         if (isAvailable !== undefined) menuItem.isAvailable = isAvailable; // Handle boolean check
-        if (tags) menuItem.tags = tags;
-        if (ingredients) menuItem.ingredients = ingredients;
+        if (dietary) menuItem.dietary = dietary;
+        if (isVeg !== undefined) menuItem.isVeg = isVeg; // Handle boolean check
+        if (spiceLevel) menuItem.spiceLevel = spiceLevel;
+        if (popularity) menuItem.popularity = popularity;
 
         // Save the updated menu item
         await menuItem.save();
@@ -395,26 +443,29 @@ const deleteMenuItem = async (req, res) => {
     }
 };
 
-
 const generateQRCode = async (req, res) => {
     try {
-        const { tableNumber, restaurantId } = req.body;
+        const { tableNumber } = req.body;
+        const restaurantId = req.user.restaurantId;  // restaurantId is from Auth
 
         // Use the generateQRCode utility to get the QR code
         const qrCodeData = await generateQRcode(restaurantId, tableNumber);
 
+        // Await Restaurant.findOne to get the restaurant details
+        const restaurant = await Restaurant.findOne({
+            _id: restaurantId,
+        });
+
         res.status(200).json({
             message: 'QR code generated successfully.',
             qrCode: qrCodeData,  // The base64-encoded image
+            restaurant: restaurant.name,
         });
     } catch (error) {
         console.error('Error in QR code generation:', error);
-        res.status(500).json({ error: error || 'An error occurred while generating the QR code.' });
+        res.status(500).json({ error: error.message || 'An error occurred while generating the QR code.' });
     }
 };
-
-
-
 
 
 module.exports = {
