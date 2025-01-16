@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { object } = require('zod');
 
 const menuSchema = new mongoose.Schema({
     restaurantid: {
@@ -36,6 +37,12 @@ const menuSchema = new mongoose.Schema({
     isVeg: {
         type: Boolean,
         required: true,
+    },
+    customization: {
+        type: Object,
+        default: {
+            spiceLevel: ["Mild", "Medium", "Spicy"],
+        },
     },
     spiceLevel: {
         type: String,

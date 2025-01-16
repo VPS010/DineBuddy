@@ -114,13 +114,13 @@ const getUserProfile = async (req, res) => {
 };
 
 
-
 const getMenu = async (req, res) => {
     try {
-        const { restaurantId } = req.query;
+        const { restaurantId } = req.params; // Access restaurantId from URL parameter
+        const { table } = req.query; // Access table from query parameter
 
         if (!restaurantId) {
-            return res.status(400).json({ error: 'Restaurant ID is required.' });
+            return res.status(400).json({ error: 'Restaurant ID and Table are required.' });
         }
 
         const menuItems = await Menu.find({ restaurantid: restaurantId });
@@ -131,17 +131,14 @@ const getMenu = async (req, res) => {
 
         res.status(200).json({
             message: 'Menu items fetched successfully.',
+            table: table,
             menu: menuItems,
         });
     } catch (error) {
         console.error('Error in getMenu:', error.message);
         return res.status(500).json({ error: 'An error occurred while fetching the menu.' });
     }
-}
-
-
-
-
+};
 
 
 module.exports = {
