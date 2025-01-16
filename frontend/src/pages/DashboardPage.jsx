@@ -17,7 +17,7 @@ import AdminProfile from "../DashboardComponents/AdminProfile/mainAdminProfile";
 import MenuManagement from "../DashboardComponents/AdminMenu/MenuManagement";
 import KitchenScreen from "../DashboardComponents/KitchenScreen";
 import AdminOrdersPage from "../DashboardComponents/Orders";
-import QRCodeGenerator from "../DashboardComponents/QRcodes";
+import QRCodeGenerator from "../DashboardComponents/QRgenerator/QRCodeGenerator";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -83,8 +83,6 @@ const DashboardPage = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-
-
         {/* Header */}
 
         <header className="bg-white  shadow-sm">
@@ -101,11 +99,7 @@ const DashboardPage = () => {
               </div>
               <div className="bg-gray-600 h-full rounded-md mx-5 ml-9">
                 <button
-                  onClick={() =>
-                    setActiveSection(
-                      activeSection === "dashboard" ? "generateQR" : "dashboard"
-                    )
-                  }
+                  onClick={() => setActiveSection("generateQR")}
                   className="text-gray-100 font-medium px-5 p-2 bg-green-800 rounded-md hover:bg-green-700 group relative transition-all duration-300overflow-hidden focus:ring-1 focus: outline-none focus:ring-slate-600 text-sm text-center transform active:scale-95 transform-all ease-in-out "
                 >
                   Get QR Codes

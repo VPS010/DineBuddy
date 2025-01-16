@@ -3,6 +3,8 @@ const { Restaurant } = require('../models/Restaurant');
 const { Menu } = require('../models/Menu');
 const generateQRcode = require('../utils/qrCodeGenerator')
 const generateToken = require('../utils/generateToken')
+const axios = require('axios');
+
 
 
 const signupAdmin = async (req, res) => {
@@ -246,6 +248,37 @@ const getRestaurant = async (req, res) => {
     }
 };
 
+
+
+// Utility function to upload image to ImgB
+const uploadToImgBB = async (base64Image) => {
+    try {
+        // Extract the base64 data from the data URL
+        const base64Data = base64Image.split(';base64,').pop();
+
+        // Create form data
+        const formData = new URLSearchParams();
+        formData.append('key', process.env.IMGBB_API_KEY);
+        formData.append('image', base64Data);
+
+        const response = await axios.post('https://api.imgbb.com/1/upload', formData, {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        });
+
+        if (response.data && response.data.data && response.data.data.url) {
+            return response.data.data.url;
+        } else {
+            throw new Error('Invalid response from ImgBB');
+        }
+    } catch (error) {
+        console.error('ImgBB upload error:', error.response?.data || error.message);
+        throw new Error('Failed to upload image to ImgBB');
+    }
+};
+
+
 const addMenuItem = async (req, res) => {
     try {
         const {
@@ -276,45 +309,43 @@ const addMenuItem = async (req, res) => {
             });
         }
 
+        // Upload image to ImgBB if provided
+        let imageUrl = null;
+        if (image && image !== '/api/placeholder/400/400') {
+            try {
+                imageUrl = await uploadToImgBB(image);
+            } catch (error) {
+                console.error('Image upload error:', error);
+                return res.status(400).json({
+                    error: 'Failed to upload image. Please try again.',
+                });
+            }
+        }
+
         // Create a new menu item
         const newMenuItem = await Menu.create({
-            restaurantid: req.user.restaurantId, // Assuming restaurant ID is stored in the authenticated user's data
+            restaurantid: req.user.restaurantId,
             name,
             description,
             price,
             category,
-            image,
-            isAvailable: isAvailable ?? true, // Default to true if not provided
-            dietary: dietary || [], // Default to an empty array
+            image: imageUrl || '/api/placeholder/400/400', // Use placeholder if no image
+            isAvailable: isAvailable ?? true,
+            dietary: dietary || [],
             isVeg,
             spiceLevel,
-            popularity: popularity || [], // Default to an empty array
+            popularity: popularity || [],
         });
 
-        // Send response
         res.status(201).json({
             message: 'Menu item added successfully.',
-            menuItem: {
-                id: newMenuItem._id,
-                name: newMenuItem.name,
-                description: newMenuItem.description,
-                price: newMenuItem.price,
-                category: newMenuItem.category,
-                image: newMenuItem.image,
-                isAvailable: newMenuItem.isAvailable,
-                dietary: newMenuItem.dietary,
-                isVeg: newMenuItem.isVeg,
-                spiceLevel: newMenuItem.spiceLevel,
-                popularity: newMenuItem.popularity,
-            },
+            menuItem: newMenuItem
         });
     } catch (error) {
-        console.error('Error in addMenuItem:', error.message);
+        console.error('Error in addMenuItem:', error);
         res.status(500).json({ error: 'An error occurred while adding the menu item.' });
     }
 };
-
-
 
 const getMenu = async (req, res) => {
     try {
@@ -363,6 +394,9 @@ const getMenuItem = async (req, res) => {
     }
 };
 
+
+
+
 const updateMenuItem = async (req, res) => {
     try {
         const { id } = req.params;
@@ -379,49 +413,47 @@ const updateMenuItem = async (req, res) => {
             popularity,
         } = req.body;
 
-        // Find the menu item by its ID
         const menuItem = await Menu.findById(id);
-
         if (!menuItem) {
             return res.status(404).json({ error: 'Menu item not found.' });
         }
 
-        // Validate spice level if provided
-        if (spiceLevel) {
-            const validSpiceLevels = ['Mild', 'Medium', 'Spicy'];
-            if (!validSpiceLevels.includes(spiceLevel)) {
+        // Upload new image to ImgBB only if a new image is provided
+        let imageUrl = menuItem.image;
+        if (image && image !== menuItem.image && image !== '/api/placeholder/400/400') {
+            try {
+                imageUrl = await uploadToImgBB(image);
+            } catch (error) {
+                console.error('Image upload error:', error);
                 return res.status(400).json({
-                    error: `Invalid spice level. Valid values are: ${validSpiceLevels.join(', ')}.`,
+                    error: 'Failed to upload image. Please try again.',
                 });
             }
         }
 
-        // Update the menu item details with the provided data
+        // Update fields
         if (name) menuItem.name = name;
         if (description) menuItem.description = description;
         if (price) menuItem.price = price;
         if (category) menuItem.category = category;
-        if (image) menuItem.image = image;
-        if (isAvailable !== undefined) menuItem.isAvailable = isAvailable; // Handle boolean check
+        menuItem.image = imageUrl;
+        if (isAvailable !== undefined) menuItem.isAvailable = isAvailable;
         if (dietary) menuItem.dietary = dietary;
-        if (isVeg !== undefined) menuItem.isVeg = isVeg; // Handle boolean check
+        if (isVeg !== undefined) menuItem.isVeg = isVeg;
         if (spiceLevel) menuItem.spiceLevel = spiceLevel;
         if (popularity) menuItem.popularity = popularity;
 
-        // Save the updated menu item
         await menuItem.save();
 
         res.status(200).json({
             message: 'Menu item updated successfully.',
-            menuItem,
+            menuItem
         });
     } catch (error) {
-        console.error('Error in updateMenuItem:', error.message);
+        console.error('Error in updateMenuItem:', error);
         res.status(500).json({ error: 'An error occurred while updating the menu item.' });
     }
 };
-
-
 
 const deleteMenuItem = async (req, res) => {
     try {

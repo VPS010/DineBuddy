@@ -88,50 +88,64 @@ const QRCodeGenerator = () => {
 
   const handlePrint = () => {
     const printContent = document.getElementById("qr-cards-container");
-  
+
     if (!printContent) {
       console.error("QR cards container not found");
       return;
     }
-  
+
     // Create a hidden iframe
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
+    const iframe = document.createElement("iframe");
+    iframe.style.display = "none";
     document.body.appendChild(iframe);
-    
+
     // Get the iframe document
     const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-    
+
     // Fetch all styles from the current document
     const styles = Array.from(document.styleSheets)
       .map((styleSheet) => {
         try {
-          return Array.from(styleSheet.cssRules || []).map((rule) => rule.cssText).join("\n");
+          return Array.from(styleSheet.cssRules || [])
+            .map((rule) => rule.cssText)
+            .join("\n");
         } catch (e) {
           console.warn("Could not access stylesheet:", styleSheet.href);
           return "";
         }
       })
       .join("\n");
-    
+
     // Write the content to the iframe
     iframeDoc.write(`
       <!DOCTYPE html>
       <html>
         <head>
           <title>Print QR Codes</title>
-          <style>
-            ${styles}
-            @media print {
-              body { margin: 0; padding: 16px; }
-              .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-              .card { break-inside: avoid; page-break-inside: avoid; }
-              .bg-gradient-to-r {
-                background: linear-gradient(to right, #064e3b, #065f46);
-                color: white;
-              }
+         <style>
+          ${styles}
+          @media print {
+            body { margin: 0; padding: 16px; }
+            .grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr); /* 2 cards per row */
+              gap: 1rem;
+              page-break-inside: avoid;
             }
-          </style>
+            .card {
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
+            .bg-gradient-to-r {
+              background: linear-gradient(to right, #064e3b, #065f46);
+              color: white;
+            }
+            .grid-container {
+              margin-bottom: 0; /* Ensure no extra space between pages */
+            }
+          }
+         </style>
+
         </head>
         <body>
           ${printContent.outerHTML}
@@ -139,16 +153,16 @@ const QRCodeGenerator = () => {
       </html>
     `);
     iframeDoc.close();
-    
+
     // Wait for images and resources to load
     iframe.onload = () => {
       try {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
       } catch (e) {
-        console.error('Print failed:', e);
+        console.error("Print failed:", e);
       }
-      
+
       // Remove the iframe after printing (with a delay to ensure print dialog is handled)
       setTimeout(() => {
         document.body.removeChild(iframe);
@@ -205,8 +219,8 @@ const QRCodeGenerator = () => {
       </div>
 
       {qrCodes.length > 0 && (
-        <div id="qr-cards-container" className="p-8">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+        <div id="qr-cards-container">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {qrCodes.map(({ tableNumber, qrCode }) => (
               <div
                 key={tableNumber}
@@ -218,15 +232,15 @@ const QRCodeGenerator = () => {
                       className="text-amber-400 mb-1"
                       size={24}
                     />
-                    <h1 className="text-xl font-bold tracking-wide">
+                    <h1 className="text-3xl font-bold tracking-wide">
                       {restaurant}
                     </h1>
                   </div>
                 </div>
 
                 <div className="mt-24 flex flex-col items-center px-6 pb-6">
-                  <div className="bg-stone-100 border mt-2 border-amber-200 rounded-full px-8 py-2 mb-6">
-                    <h2 className="text-xl font-bold text-stone-800">
+                  <div className="bg-stone-100 border mt-9 border-amber-200 rounded-full px-8 py-2 mb-6">
+                    <h2 className="text-xl  font-bold text-stone-800">
                       Table {tableNumber}
                     </h2>
                   </div>

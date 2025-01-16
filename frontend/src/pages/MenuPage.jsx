@@ -4,8 +4,6 @@ import Header from '../MenuComponenets/Header';
 import CategoryMenu from '../MenuComponenets/CategorySidebar';
 import MenuGrid from '../MenuComponenets/MenuGrid';
 import AddToCartModal from '../MenuComponenets/AddToCartModal';
-import LoginModal from '../MenuComponenets/LoginModal';
-
 
 const menuItems = [
     {
@@ -16,7 +14,7 @@ const menuItems = [
       description: "Fresh Atlantic salmon grilled to perfection with herbs",
       image: "/api/placeholder/300/200",
       dietary: ["Gluten-Free"],
-      isVeg:true,
+      isVeg: true,
       customization: {
         spiceLevel: ["Mild", "Medium", "Spicy"],
         sides: ["Rice", "Vegetables", "Potatoes"]
@@ -31,7 +29,7 @@ const menuItems = [
       description: "Classic Caesar salad with romaine lettuce and house-made dressing",
       ingredients: ["Romaine", "Croutons", "Parmesan", "Caesar Dressing"],
       image: "/api/placeholder/300/200",
-      isVeg:false,
+      isVeg: false,
       dietary: ["Vegetarian"],
       customization: {
         addOns: ["Chicken", "Shrimp", "Extra Cheese"]
@@ -46,7 +44,7 @@ const menuItems = [
       description: "Classic Caesar salad with romaine lettuce and house-made dressing",
       ingredients: ["Romaine", "Croutons", "Parmesan", "Caesar Dressing"],
       image: "/api/placeholder/300/200",
-      isVeg:true,
+      isVeg: true,
       dietary: ["Vegetarian"],
       customization: {
         addOns: ["Chicken", "Shrimp", "Extra Cheese"]
@@ -61,17 +59,16 @@ const menuItems = [
       description: "Classic Caesar salad with romaine lettuce and house-made dressing",
       ingredients: ["Romaine", "Croutons", "Parmesan", "Caesar Dressing"],
       image: "/api/placeholder/300/200",
-      isVeg:false,
+      isVeg: false,
       dietary: ["Vegetarian"],
       customization: {
         addOns: ["Chicken", "Shrimp", "Extra Cheese"]
       },
       popularity: 4.2
     }
-  ];
+];
 
 const MenuPage = () => {
-  // Existing state
   const [cart, setCart] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -80,20 +77,6 @@ const MenuPage = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isVegOnly, setIsVegOnly] = useState(false);
-  
-  // Authentication state
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [user, setUser] = useState("helo");
-  const [pendingCartAction, setPendingCartAction] = useState(true);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setIsLoggedIn(true);
-    }
-  }, []);
 
   useEffect(() => {
     let filtered = [...menuItems];
@@ -131,38 +114,9 @@ const MenuPage = () => {
     });
     
     setMenuData(filtered);
-  }, [searchQuery, selectedCategory, sortBy, isVegOnly]); // Added isVegOnly to dependencies
-
-  const handleLogin = async (email, password) => {
-    try {
-      const userData = { email, id: Date.now() };
-      setUser(userData);
-      setIsLoggedIn(true);
-      localStorage.setItem('user', JSON.stringify(userData));
-      
-      if (pendingCartAction) {
-        addToCart(pendingCartAction.item, pendingCartAction.customizations, pendingCartAction.quantity);
-        setPendingCartAction(null);
-      }
-    } catch (error) {
-      throw new Error('Login failed');
-    }
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    setIsLoggedIn(false);
-    localStorage.removeItem('user');
-    setCart([]);
-  };
+  }, [searchQuery, selectedCategory, sortBy, isVegOnly]);
 
   const addToCart = (item, customizations = {}, quantity = 1) => {
-    if (!isLoggedIn) {
-      setPendingCartAction({ item, customizations, quantity });
-      setShowLoginModal(true);
-      return;
-    }
-
     const cartItem = {
       ...item,
       quantity,
@@ -197,9 +151,6 @@ const MenuPage = () => {
         setSortBy={setSortBy}
         cartCount={cart.length}
         setIsCartOpen={setIsCartOpen}
-        isLoggedIn={isLoggedIn}
-        user={user}
-        onLogout={handleLogout}
         isVegOnly={isVegOnly}
         setIsVegOnly={setIsVegOnly}
       />
@@ -232,16 +183,6 @@ const MenuPage = () => {
           item={selectedItem}
           addToCart={addToCart}
           setSelectedItem={setSelectedItem}
-        />
-      )}
-
-      {showLoginModal && (
-        <LoginModal
-          onClose={() => {
-            setShowLoginModal(false);
-            setPendingCartAction(null);
-          }}
-          onLogin={handleLogin}
         />
       )}
     </div>

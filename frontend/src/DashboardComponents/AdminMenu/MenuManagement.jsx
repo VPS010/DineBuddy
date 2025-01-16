@@ -64,23 +64,83 @@ const MenuManagement = () => {
     }));
   };
 
-  const handleImageUpload = (e) => {
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          // Max dimensions
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress image to JPEG with 0.7 quality
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
+          resolve(compressedDataUrl);
+        };
+      };
+    });
+  };
+
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setPreviewImage(reader.result);
-        setFormData((prev) => ({ ...prev, image: reader.result }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Check file size before compression (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+          setError("Image size should be less than 5MB");
+          return;
+        }
+
+        const compressedImage = await compressImage(file);
+        setPreviewImage(compressedImage);
+        setFormData((prev) => ({ ...prev, image: compressedImage }));
+        setError(null);
+      } catch (err) {
+        setError("Error processing image. Please try again.");
+        console.error("Error processing image:", err);
+      }
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
+      // Validate image size after compression
+      if (formData.image && formData.image.length > 1024 * 1024 * 2) {
+        // 2MB limit after compression
+        throw new Error(
+          "Compressed image is still too large. Please use a smaller image."
+        );
+      }
+
       if (selectedItem) {
         // Update existing menu item
         const response = await api.put(
@@ -98,17 +158,24 @@ const MenuManagement = () => {
         setMenuItems((prev) => [...prev, response.data.menuItem]);
       }
       handleCloseModal();
-      setError(null);
     } catch (err) {
-      setError(
-        selectedItem ? "Failed to update menu item" : "Failed to add menu item"
-      );
+      const errorMessage =
+        err.response?.data?.error ||
+        err.message ||
+        (selectedItem
+          ? "Failed to update menu item"
+          : "Failed to add menu item");
+      setError(errorMessage);
       console.error("Error submitting menu item:", err);
     } finally {
       setLoading(false);
     }
   };
 
+
+
+
+  
   const handleEdit = (item) => {
     setSelectedItem(item);
     setFormData(item);
