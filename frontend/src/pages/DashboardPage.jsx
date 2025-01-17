@@ -18,7 +18,7 @@ import MenuManagement from "../DashboardComponents/AdminMenu/MenuManagement";
 import KitchenScreen from "../DashboardComponents/KitchenScreen";
 import AdminOrdersPage from "../DashboardComponents/Orders";
 import QRCodeGenerator from "../DashboardComponents/QRgenerator/QRCodeGenerator";
-
+import SettingsPage from "../DashboardComponents/Settings/Settings";
 const DashboardPage = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -132,8 +132,8 @@ const DashboardPage = () => {
           {activeSection === "kitchen" && <KitchenScreen />}
           {activeSection === "menu" && <MenuManagement />}
           {activeSection === "profile" && <AdminProfile />}
-          {activeSection === "settings" && <Settings />}
           {activeSection === "generateQR" && <QRCodeGenerator />}
+          {activeSection === "settings" && <SettingsPage />}
         </div>
       </div>
     </div>

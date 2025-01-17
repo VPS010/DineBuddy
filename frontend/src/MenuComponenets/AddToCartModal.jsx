@@ -1,50 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
+import { useRecoilState } from "recoil";
+import { selectedItemState } from './store/atoms';
 
-const AddToCartModal = ({ item, addToCart, setSelectedItem }) => {
+const AddToCartModal = ({ addToCart }) => {
+  const [selectedItem, setSelectedItem] = useRecoilState(selectedItemState);
   const [quantity, setQuantity] = useState(1);
   const [customizations, setCustomizations] = useState({});
 
+  // Reset state when modal opens with new item
+  useEffect(() => {
+    setQuantity(1);
+    setCustomizations({});
+  }, [selectedItem]);
+
+  // If no item is selected, don't render the modal
+  if (!selectedItem) return null;
+
   const handleAdd = () => {
-    addToCart(item, customizations, quantity);
+    addToCart(selectedItem, customizations, quantity);
+    setSelectedItem(null); // Close modal after adding to cart
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 className="text-[#333333] font-semibold text-lg mb-4">{item.name}</h3>
-        
+        <h3 className="text-[#333333] font-semibold text-lg mb-4">
+          {selectedItem.name}
+        </h3>
+
         {/* Customization Options */}
-        {item.customization && Object.entries(item.customization).map(([key, options]) => (
-          <div key={key} className="mb-4">
-            <label className="block text-[#333333] mb-2 capitalize">{key}</label>
-            <select
-              className="w-full p-2 border border-[#E0E0E0] rounded-lg"
-              onChange={(e) => setCustomizations(prev => ({
-                ...prev,
-                [key]: e.target.value
-              }))}
-            >
-              <option value="">Select {key}</option>
-              {options.map(option => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
-        ))}
+        {selectedItem.customization &&
+          Object.entries(selectedItem.customization).map(([key, options]) => (
+            <div key={key} className="mb-4">
+              <label className="block text-[#333333] mb-2 capitalize">
+                {key}
+              </label>
+              <select
+                className="w-full p-2 border border-[#E0E0E0] rounded-lg"
+                onChange={(e) =>
+                  setCustomizations((prev) => ({
+                    ...prev,
+                    [key]: e.target.value,
+                  }))
+                }
+                value={customizations[key] || ""}
+              >
+                <option value="">Select {key}</option>
+                {options.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
 
         {/* Quantity Selector */}
         <div className="mb-6">
           <label className="block text-[#333333] mb-2">Quantity</label>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+              onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
               className="w-8 h-8 flex items-center justify-center bg-[#F4F1DE] rounded-full"
             >
               -
             </button>
             <span className="w-8 text-center">{quantity}</span>
             <button
-              onClick={() => setQuantity(prev => prev + 1)}
+              onClick={() => setQuantity((prev) => prev + 1)}
               className="w-8 h-8 flex items-center justify-center bg-[#F4F1DE] rounded-full"
             >
               +

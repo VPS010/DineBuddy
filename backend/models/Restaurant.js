@@ -39,6 +39,13 @@ const restaurantSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,  // Automatically set to the current date when a new restaurant is created
     },
+    // Geo-fence field (optional):
+    geoFence: {
+        coordinates: {
+            type: [[Number]],  // Array of two corner coordinates: [lat1, lng1], [lat2, lng2]
+            required: false,    // Not required during restaurant creation
+        },
+    },
 });
 
 const Restaurant = mongoose.model('Restaurant', restaurantSchema);

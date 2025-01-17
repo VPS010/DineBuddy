@@ -174,10 +174,11 @@ const updateAdminProfile = async (req, res) => {
 };
 
 
-
 const updateRestaurant = async (req, res) => {
     try {
-        const { name, address, contact, description, businessHours } = req.body;
+        const { name, address, contact, description, businessHours, geoFence } = req.body;
+
+        console.log('Received geoFence data:', geoFence);
 
         // Check if the restaurant exists for the logged-in admin
         const restaurant = await Restaurant.findOne({ adminId: req.user.id });
@@ -195,9 +196,33 @@ const updateRestaurant = async (req, res) => {
         if (businessHours) {
             restaurant.businessHours = new Map(Object.entries(businessHours));
         }
+        if (geoFence && geoFence.coordinates) {
+            // Validate the geofence format
+            if (
+                Array.isArray(geoFence.coordinates) &&
+                geoFence.coordinates.length === 2 &&
+                geoFence.coordinates.every(
+                    (point) =>
+                        Array.isArray(point) &&
+                        point.length === 2 &&
+                        typeof point[0] === 'number' &&
+                        typeof point[1] === 'number'
+                )
+            ) {
+                // Assign the entire geoFence object with coordinates
+                restaurant.geoFence = {
+                    coordinates: geoFence.coordinates
+                };
+                console.log('Saving geoFence:', restaurant.geoFence); // Debug log
+            } else {
+                return res.status(400).json({ error: 'Invalid geofence coordinates format.' });
+            }
+        }
 
+        
         // Save the updated restaurant details
         await restaurant.save();
+        console.log('Saved restaurant geoFence:', restaurant.geoFence);
 
         res.status(200).json({
             message: 'Restaurant details updated successfully.',
@@ -208,6 +233,7 @@ const updateRestaurant = async (req, res) => {
                 contact: restaurant.contact,
                 description: restaurant.description,
                 businessHours: Object.fromEntries(restaurant.businessHours), // Convert Map to object for response
+                geoFence: restaurant.geoFence,
                 memberSince: restaurant.memberSince,
             },
         });
@@ -216,8 +242,6 @@ const updateRestaurant = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while updating the restaurant details.' });
     }
 };
-
-
 
 const getRestaurant = async (req, res) => {
     try {
@@ -239,6 +263,7 @@ const getRestaurant = async (req, res) => {
                 contact: restaurant.contact,
                 description: restaurant.description,
                 businessHours: Object.fromEntries(restaurant.businessHours), // Convert Map to object
+                geofence: restaurant.geoFence, // Include geofence in the response
                 memberSince: restaurant.memberSince,
             },
         });

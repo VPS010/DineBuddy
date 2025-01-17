@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useRecoilState } from 'recoil';
 import { Menu, X } from 'lucide-react';
+import { selectedCategoryState } from "./store/atoms";
 
-const CategoryMenu = ({ categories, selectedCategory, setSelectedCategory }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const CategoryMenu = ({ categories }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [selectedCategory, setSelectedCategory] = useRecoilState(selectedCategoryState);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
 
