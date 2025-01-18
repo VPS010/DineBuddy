@@ -8,8 +8,10 @@ import {
   isCartOpenState,
   selectedItemState,
   isVegOnlyState,
+  restaurantInfoState,
+  geoFenceState,
 } from "./store/atoms";
-import Cart from "./Cart";
+import Cart from "./MenuCart/Cart";
 import Header from "./Header";
 import CategoryMenu from "./CategorySidebar";
 import MenuGrid from "./MenuGrid";
@@ -18,9 +20,10 @@ import AddToCartModal from "./AddToCartModal";
 const MenuPage = () => {
   const [cart, setCart] = useRecoilState(cartState);
   const [menuData, setMenuData] = useRecoilState(menuDataState);
-  const [isCartOpen, setIsCartOpen] = useRecoilState(isCartOpenState);
   const [selectedItem, setSelectedItem] = useRecoilState(selectedItemState);
-  const [isVegOnly] = useRecoilState(isVegOnlyState);
+  const [restaurantInfo, setRestaurantInfo] =
+    useRecoilState(restaurantInfoState);
+  const [geoFence, setGeoFence] = useRecoilState(geoFenceState);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
 
@@ -35,16 +38,37 @@ const MenuPage = () => {
         const response = await axios.get(
           `http://localhost:3000/api/v1/user/menu/${restaurantId}`
         );
-        if (response.data && response.data.menu) {
-          const processedMenu = response.data.menu.map((item) => ({
-            ...item,
-            dietary: item.dietary || [],
-            ingredients: item.ingredients || [],
-            customization: {
-              spiceLevel: item.customization?.spiceLevel || [],
-            },
-          }));
-          setMenuData(processedMenu);
+
+        if (response.data) {
+          // Set menu data
+          if (response.data.menu) {
+            const processedMenu = response.data.menu.map((item) => ({
+              ...item,
+              dietary: item.dietary || [],
+              ingredients: item.ingredients || [],
+              customization: {
+                spiceLevel: item.customization?.spiceLevel || [],
+              },
+            }));
+            setMenuData(processedMenu);
+          }
+
+          // Set restaurant info
+          if (response.data.restaurant) {
+            setRestaurantInfo({
+              name: response.data.restaurant.name || "",
+              address: response.data.restaurant.address || "",
+              contact: response.data.restaurant.contact || "",
+            });
+          }
+
+          // Set geofence data
+          if (response.data.restaurant?.geoFence) {
+            setGeoFence({
+              coordinates: response.data.restaurant.geoFence,
+              isWithinBoundary: false,
+            });
+          }
         }
       } catch (err) {
         console.error("Error fetching menu:", err);
@@ -57,43 +81,16 @@ const MenuPage = () => {
     if (restaurantId) {
       fetchMenu();
     }
-  }, [restaurantId, setMenuData]);
+  }, [restaurantId, setMenuData, setRestaurantInfo, setGeoFence]);
 
   const addToCart = (item, customizations = {}, quantity = 1) => {
-    setCart((prevCart) => {
-      // Check if exact same item with same customizations exists
-      const existingItem = prevCart.find(
-        (cartItem) =>
-          cartItem._id === item._id &&
-          JSON.stringify(cartItem.customizations) ===
-            JSON.stringify(customizations)
-      );
-
-      if (existingItem) {
-        // Update quantity of existing item
-        return prevCart.map((cartItem) =>
-          cartItem._id === item._id &&
-          JSON.stringify(cartItem.customizations) ===
-            JSON.stringify(customizations)
-            ? { ...cartItem, quantity: cartItem.quantity + quantity }
-            : cartItem
-        );
-      }
-
-      // Add as new item
-      const newItem = {
-        ...item,
-        quantity,
-        customizations,
-        cartId: `${item._id}-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2)}`,
-      };
-
-      const newCart = [...prevCart, newItem];
-      return newCart;
-    });
-
+    const cartItem = {
+      ...item,
+      quantity,
+      customizations,
+      cartId: `${item.id}-${Date.now()}`,
+    };
+    setCart((prevCart) => [...prevCart, cartItem]);
     setSelectedItem(null);
   };
 
@@ -102,11 +99,7 @@ const MenuPage = () => {
   };
 
   const updateCartItemQuantity = (cartId, newQuantity) => {
-    if (newQuantity < 1) {
-      removeFromCart(cartId);
-      return;
-    }
-
+    if (newQuantity < 1) return;
     setCart((prevCart) =>
       prevCart.map((item) =>
         item.cartId === cartId ? { ...item, quantity: newQuantity } : item
@@ -133,20 +126,27 @@ const MenuPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F1DE]">
+    <div className="flex flex-col min-h-screen">
       <Header cartCount={cart.length} />
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row gap-8">
-          <CategoryMenu categories={categories} />
-          <MenuGrid />
-        </div>
-      </main>
-      <Cart
-        updateCartItemQuantity={updateCartItemQuantity}
-        removeFromCart={removeFromCart}
-        tableNumber={tableNumber}
-      />
-      {selectedItem && <AddToCartModal addToCart={addToCart} />}
+      <div className="flex flex-1">
+        <CategoryMenu categories={categories} />
+        <main className="flex flex-1 justify-center">
+          <MenuGrid menuItems={menuData} onItemClick={setSelectedItem} />
+        </main>
+        <Cart
+          updateCartItemQuantity={updateCartItemQuantity}
+          removeFromCart={removeFromCart}
+          tableNumber={tableNumber}
+          // fenceCoordinates={fenceCoordinates}
+        />
+      </div>
+      {selectedItem && (
+        <AddToCartModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          addToCart={addToCart}
+        />
+      )}
     </div>
   );
 };

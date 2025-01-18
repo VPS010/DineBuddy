@@ -39,3 +39,20 @@ export const isVegOnlyState = atom({
   key: 'isVegOnlyState',
   default: false
 });
+
+export const restaurantInfoState = atom({
+  key: 'restaurantInfoState',
+  default: {
+    name: '',
+    address: '',
+    contact: ''
+  }
+});
+
+export const geoFenceState = atom({
+  key: 'geoFenceState',
+  default: {
+    coordinates: null,
+    isWithinBoundary: false
+  }
+});

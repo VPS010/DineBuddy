@@ -1,14 +1,9 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { RecoilRoot } from "recoil";
 
 // Import Components for General
 import LandingPage from "./pages/LandingPage";
 
-// Import Components for Admin
-import AdminLogin from "./pages/Adminlogin";
-import AdminSignup from "./pages/AdminSignup";
-import DashboardPage from "./pages/DashboardPage";
 
 // Import Components for Customers
 import UserMenuPage from "./pages/UserMenuPage";
@@ -35,11 +30,6 @@ const App = () => {
       <Routes>
         {/* Common Route */}
         <Route path="/" element={<LandingPage />} />
-
-        {/* Admin Routes */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/signup" element={<AdminSignup />} />
-        <Route path="/admin/dashboard" element={<DashboardPage />} />
 
         {/* Customer Routes */}
         {/* <Route path="/user/menu/:restaurantId" element={<MenuPage />} /> */}

@@ -105,7 +105,7 @@ const MenuGrid = () => {
   }
 
   return (
-    <div className="w-full bg-[#FDFBF7] px-4 sm:px-6 lg:px-8">
+    <div className="w-full bg-[#FDFBF7] p-2 mt-6 mx-4 justify-center sm:px-6 lg:px-8">
       {Object.entries(groupedItems).map(([category, items]) => (
         <div key={`category-${category}`} className="mb-8 sm:mb-12">
           <div
@@ -147,7 +147,7 @@ const MenuGrid = () => {
                 : "max-h-0 opacity-0"
             }`}
           >
-            <div className="space-y-4 sm:space-y-6 md:grid md:grid-cols-2 md:gap-6 md:space-y-0 lg:grid-cols-1 xl:grid-cols-2 p-2 sm:p-4 md:p-6 rounded-lg overflow-hidden bg-gradient-to-b from-[#F8F6F0] to-[#FDFBF7]">
+            <div className="space-y-4 m-0 sm:space-y-6 md:grid md:grid-cols-2 md:gap-6 md:space-y-0 lg:grid-cols-1 xl:grid-cols-2 p-2 sm:p-4 md:p-6 rounded-lg overflow-hidden bg-gradient-to-b from-[#F8F6F0] to-[#FDFBF7]">
               {items.map((item) => (
                 <MenuItem
                   key={item._id || `menu-item-${item.id}-${Date.now()}`}

@@ -1,5 +1,6 @@
 const { Menu } = require('../models/Menu')
 const { User } = require('../models/User')
+const { Restaurant } = require('../models/Restaurant')
 
 const userGenerateToken = require('../utils/userGenerateToken'); // Import the token generation function
 
@@ -47,7 +48,6 @@ const signupUser = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while creating the user.' });
     }
 };
-
 
 
 
@@ -113,33 +113,46 @@ const getUserProfile = async (req, res) => {
     }
 };
 
-
 const getMenu = async (req, res) => {
     try {
         const { restaurantId } = req.params; // Access restaurantId from URL parameter
         const { table } = req.query; // Access table from query parameter
 
         if (!restaurantId) {
-            return res.status(400).json({ error: 'Restaurant ID and Table are required.' });
+            return res.status(400).json({ error: 'Restaurant ID is required.' });
         }
 
+        // Fetch menu items
         const menuItems = await Menu.find({ restaurantid: restaurantId });
 
         if (!menuItems.length) {
             return res.status(404).json({ error: 'No menu items found.' });
         }
 
+        // Fetch restaurant information, including geoFence coordinates
+        const restaurant = await Restaurant.findById(restaurantId, 'name address contact geoFence');
+
+        if (!restaurant) {
+            return res.status(404).json({ error: 'Restaurant not found.' });
+        }
+
+        // Return menu along with restaurant information
         res.status(200).json({
             message: 'Menu items fetched successfully.',
             table: table,
             menu: menuItems,
+            restaurant: {
+                name: restaurant.name,
+                address: restaurant.address,
+                contact: restaurant.contact,
+                geoFence: restaurant.geoFence?.coordinates || null, // Handle cases where geoFence might not exist
+            },
         });
     } catch (error) {
         console.error('Error in getMenu:', error.message);
         return res.status(500).json({ error: 'An error occurred while fetching the menu.' });
     }
 };
-
 
 module.exports = {
     signupUser, loginUser, getUserProfile,
