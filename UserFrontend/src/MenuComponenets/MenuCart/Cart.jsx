@@ -1,4 +1,3 @@
-// Cart.js (Main Component)
 import React, { useState, useEffect } from "react";
 import { useRecoilState } from "recoil";
 import { toast } from "react-toastify";
@@ -8,6 +7,7 @@ import { CartItem } from "./CartItem";
 import { OrderedItem } from "./OrderedItem";
 import { CartSummary } from "./CartSummary";
 import { ConfirmationDialog } from "./ConfirmationDialog";
+import LocationVerification from "./LocationVerification";
 
 const Cart = ({
   updateCartItemQuantity: externalUpdateCartItemQuantity,
@@ -18,8 +18,20 @@ const Cart = ({
   const [isCartOpen, setIsCartOpen] = useRecoilState(isCartOpenState);
   const [orderedItems, setOrderedItems] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
+
+  // Initialize LocationVerification hook
+  const locationVerification = LocationVerification({
+    onLocationVerified: () => {
+      const updatedOrderedItems = consolidateCart([...orderedItems, ...cart]);
+      setOrderedItems(updatedOrderedItems);
+      setCart([]);
+      toast.success("Order placed successfully!");
+    },
+    onLocationDenied: () => {
+      toast.info("Order cancelled due to location verification.");
+    },
+  });
 
   // Function to consolidate cart items
   const consolidateCart = (items) => {
@@ -54,33 +66,18 @@ const Cart = ({
     externalUpdateCartItemQuantity(cartId, newQuantity);
   };
 
-  const showRemoveDialog = (cartId) => {
-    setItemToRemove(cartId);
-    setDialogOpen(true);
-  };
-
   const handleConfirmRemove = () => {
     removeFromCart(itemToRemove);
     setDialogOpen(false);
     setItemToRemove(null);
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (cart.length === 0) {
       toast.error("Cannot place an empty order.");
       return;
     }
-    setOrderDialogOpen(true);
-  };
-
-  const confirmOrderPlacement = () => {
-    const updatedOrderedItems = consolidateCart([...orderedItems, ...cart]);
-    console.log("New Ordered Items", cart);
-    setOrderedItems(updatedOrderedItems);
-    console.log("All Ordered Items", updatedOrderedItems);
-    setCart([]);
-    toast.success("Order placed successfully!");
-    setOrderDialogOpen(false);
+    locationVerification.startVerification();
   };
 
   const subtotal = cart.reduce(
@@ -92,12 +89,13 @@ const Cart = ({
 
   return (
     <div
-      className={`fixed inset-y-0 right-0 w-full md:w-96 bg-[#FFFFFF] shadow-xl transform transition-transform ${
+      className={`fixed inset-0 bg-white md:inset-y-0 md:right-0 md:w-96 transform transition-transform duration-300 ${
         isCartOpen ? "translate-x-0" : "translate-x-full"
       } z-50`}
     >
       <div className="flex flex-col h-full">
-        <div className="p-4 border-b border-[#E8E1D3] flex justify-between items-center bg-[#F9F6F0]">
+        {/* Cart Header */}
+        <div className="sticky top-0 p-4 border-b border-[#E8E1D3] flex justify-between items-center bg-[#F9F6F0]">
           <h2 className="text-[#2D3436] font-semibold text-lg">Your Cart</h2>
           <button
             onClick={() => setIsCartOpen(false)}
@@ -107,66 +105,68 @@ const Cart = ({
           </button>
         </div>
 
+        {/* Cart Items */}
         <div className="flex-1 overflow-y-auto">
-          <h3 className="p-4 text-lg font-semibold text-[#2D3436]">
-            New Items
-          </h3>
-          {cart.length > 0 ? (
-            cart.map((item) => (
-              <CartItem
-                key={item.cartId}
-                item={item}
-                updateCartItemQuantity={updateCartItemQuantity}
-                showRemoveDialog={showRemoveDialog}
-              />
-            ))
-          ) : (
-            <p className="p-4 text-[#666666] text-center">
-              Your cart is empty.
-            </p>
-          )}
+          <div className="p-4">
+            <h3 className="text-lg font-semibold text-[#2D3436] mb-4">
+              New Items
+            </h3>
+            {cart.length > 0 ? (
+              cart.map((item) => (
+                <CartItem
+                  key={item.cartId}
+                  item={item}
+                  updateCartItemQuantity={updateCartItemQuantity}
+                  showRemoveDialog={(id) => {
+                    setItemToRemove(id);
+                    setDialogOpen(true);
+                  }}
+                />
+              ))
+            ) : (
+              <p className="text-[#666666] text-center">Your cart is empty.</p>
+            )}
+          </div>
 
-          <h3 className="p-4 text-lg font-semibold text-[#2D3436]">
-            Ordered Items
-          </h3>
-          {orderedItems.length > 0 ? (
-            orderedItems.map((item) => (
-              <OrderedItem key={item.cartId} item={item} />
-            ))
-          ) : (
-            <p className="p-4 text-[#666666] text-center">
-              No items ordered yet.
-            </p>
-          )}
+          <div className="p-4 border-t border-[#E8E1D3]">
+            <h3 className="text-lg font-semibold text-[#2D3436] mb-4">
+              Ordered Items
+            </h3>
+            {orderedItems.length > 0 ? (
+              orderedItems.map((item) => (
+                <OrderedItem key={item.cartId} item={item} />
+              ))
+            ) : (
+              <p className="text-[#666666] text-center">
+                No items ordered yet.
+              </p>
+            )}
+          </div>
         </div>
 
-        <CartSummary
-          subtotal={subtotal}
-          tax={tax}
-          total={total}
-          onPlaceOrder={handlePlaceOrder}
-        />
+        {/* Cart Summary */}
+        <div className="sticky bottom-0 bg-white border-t border-[#E8E1D3]">
+          <CartSummary
+            subtotal={subtotal}
+            tax={tax}
+            total={total}
+            onPlaceOrder={handlePlaceOrder}
+          />
+        </div>
       </div>
 
+      {/* Dialogs */}
       <ConfirmationDialog
         isOpen={dialogOpen}
         title="Remove Item"
-        message="Are you sure you want to remove this item from the cart?"
+        message="Are you sure you want to remove this item?"
         onConfirm={handleConfirmRemove}
         onCancel={() => setDialogOpen(false)}
         confirmText="Remove"
-        confirmButtonClass="bg-[#9E2A2F]"
+        confirmButtonClass="bg-[#9E2A2F] hover:bg-[#8E1A1F]"
       />
 
-      <ConfirmationDialog
-        isOpen={orderDialogOpen}
-        title="Confirm Order"
-        message="Are you sure you want to place this order?"
-        onConfirm={confirmOrderPlacement}
-        onCancel={() => setOrderDialogOpen(false)}
-        confirmText="Confirm"
-        confirmButtonClass="bg-[#2D6A4F]"
-      />
+      {locationVerification.dialog}
     </div>
   );
 };
