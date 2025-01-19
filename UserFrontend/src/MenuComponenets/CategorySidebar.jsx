@@ -43,7 +43,7 @@ const CategoryMenu = ({ categories }) => {
       <button
         ref={buttonRef}
         onClick={toggleMenu}
-        className="fixed bottom-4 right-4 bg-gradient-to-r from-[#2D6A4F] to-[#1A4731] text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 group"
+        className="fixed bottom-4 right-4 bg-gradient-to-r from-[#2D6A4F] to-[#1A4731] text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-30 group"
       >
         <Menu className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
       </button>

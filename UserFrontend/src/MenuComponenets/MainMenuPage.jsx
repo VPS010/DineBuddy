@@ -31,6 +31,7 @@ const MenuPage = () => {
   const [searchParams] = useSearchParams();
   const tableNumber = searchParams.get("table");
 
+  // Enhanced menu fetching with error handling and data processing
   useEffect(() => {
     const fetchMenu = async () => {
       try {
@@ -40,29 +41,31 @@ const MenuPage = () => {
         );
 
         if (response.data) {
-          // Set menu data
           if (response.data.menu) {
+            // Enhanced menu item processing with proper ID handling
             const processedMenu = response.data.menu.map((item) => ({
               ...item,
+              id: item._id || item.id, // Ensure id is set from _id if needed
+              itemId: item._id || item.itemId, // Ensure itemId is set from _id if needed
               dietary: item.dietary || [],
               ingredients: item.ingredients || [],
               customization: {
                 spiceLevel: item.customization?.spiceLevel || [],
               },
+              price: Number(item.price) || 0, // Ensure price is a number
             }));
             setMenuData(processedMenu);
           }
 
-          // Set restaurant info
           if (response.data.restaurant) {
             setRestaurantInfo({
               name: response.data.restaurant.name || "",
               address: response.data.restaurant.address || "",
               contact: response.data.restaurant.contact || "",
+              id: response.data.restaurant._id || restaurantId,
             });
           }
 
-          // Set geofence data
           if (response.data.restaurant?.geoFence) {
             setGeoFence({
               coordinates: response.data.restaurant.geoFence,
@@ -72,7 +75,10 @@ const MenuPage = () => {
         }
       } catch (err) {
         console.error("Error fetching menu:", err);
-        setError(err.response?.data?.error || "Failed to fetch menu items");
+        setError(
+          err.response?.data?.error ||
+            "Failed to fetch menu items. Please try refreshing the page."
+        );
       } finally {
         setIsLoading(false);
       }
@@ -83,23 +89,63 @@ const MenuPage = () => {
     }
   }, [restaurantId, setMenuData, setRestaurantInfo, setGeoFence]);
 
+  // Enhanced addToCart function with proper ID handling
   const addToCart = (item, customizations = {}, quantity = 1) => {
-    const cartItem = {
-      ...item,
-      quantity,
-      customizations,
-      cartId: `${item.id}-${Date.now()}`,
-    };
-    setCart((prevCart) => [...prevCart, cartItem]);
+    if (!item._id && !item.id && !item.itemId) {
+      console.error("Cannot add item to cart: Missing ID", item);
+      return;
+    }
+
+    setCart((prevCart) => {
+      // Check for existing item with same ID and customizations
+      const existingItemIndex = prevCart.findIndex(
+        (cartItem) =>
+          (cartItem.id === item._id || cartItem.id === item.id) &&
+          JSON.stringify(cartItem.customizations) ===
+            JSON.stringify(customizations)
+      );
+
+      if (existingItemIndex !== -1) {
+        // Create a new array and update the quantity of the existing item
+        return prevCart.map((cartItem, index) =>
+          index === existingItemIndex
+            ? { ...cartItem, quantity: cartItem.quantity + quantity }
+            : cartItem
+        );
+      }
+
+      // Add new item
+      const cartItem = {
+        ...item,
+        id: item._id || item.id,
+        itemId: item._id || item.itemId,
+        quantity,
+        customizations,
+        cartId: `${item._id || item.id || item.itemId}-${Date.now()}`,
+        price: Number(item.price) || 0,
+      };
+
+      return [...prevCart, cartItem];
+    });
+
     setSelectedItem(null);
   };
-
+  // Enhanced removeFromCart function
   const removeFromCart = (cartId) => {
-    setCart((prevCart) => prevCart.filter((item) => item.cartId !== cartId));
+    setCart((prevCart) => {
+      const updatedCart = prevCart.filter((item) => item.cartId !== cartId);
+      console.log("Cart after removal:", updatedCart); // Debug log
+      return updatedCart;
+    });
   };
 
+  // Enhanced updateCartItemQuantity function
   const updateCartItemQuantity = (cartId, newQuantity) => {
-    if (newQuantity < 1) return;
+    if (newQuantity < 1) {
+      removeFromCart(cartId);
+      return;
+    }
+
     setCart((prevCart) =>
       prevCart.map((item) =>
         item.cartId === cartId ? { ...item, quantity: newQuantity } : item
@@ -137,7 +183,7 @@ const MenuPage = () => {
           updateCartItemQuantity={updateCartItemQuantity}
           removeFromCart={removeFromCart}
           tableNumber={tableNumber}
-          // fenceCoordinates={fenceCoordinates}
+          restaurantId={restaurantId}
         />
       </div>
       {selectedItem && (

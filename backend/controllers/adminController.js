@@ -3,6 +3,8 @@ const { Restaurant } = require('../models/Restaurant');
 const { Menu } = require('../models/Menu');
 const generateQRcode = require('../utils/qrCodeGenerator')
 const generateToken = require('../utils/generateToken')
+const { Session } = require('../models/Sessions')
+const { Order } = require('../models/Orders')
 const axios = require('axios');
 
 
@@ -219,7 +221,7 @@ const updateRestaurant = async (req, res) => {
             }
         }
 
-        
+
         // Save the updated restaurant details
         await restaurant.save();
         console.log('Saved restaurant geoFence:', restaurant.geoFence);
@@ -525,9 +527,153 @@ const generateQRCode = async (req, res) => {
 };
 
 
+
+//Orders and Sessions management
+
+// Get all sessions for a restaurant
+const allSessions = async (req, res) => {
+    try {
+        const { restaurantId } = req.user;
+        if (!restaurantId) {
+            return res.status(403).json({ error: 'Restaurant ID is required.' });
+        }
+        const sessions = await Session.find({ restaurantId });
+        res.status(200).json(sessions);
+    } catch (error) {
+        res.status(500).json({ error: 'An error occurred while fetching sessions.' });
+    }
+};
+
+// Get all active sessions for a restaurant
+const activeSessions = async (req, res) => {
+    try {
+        const { restaurantId } = req.user;
+        if (!restaurantId) {
+            return res.status(403).json({ error: 'Restaurant ID is required.' });
+        }
+        const activeSessions = await Session.find({ restaurantId, status: 'Active' });
+        res.status(200).json(activeSessions);
+    } catch (error) {
+        res.status(500).json({ error: 'An error occurred while fetching active sessions.' });
+    }
+};
+
+// Get all orders for a restaurant
+const allOrders = async (req, res) => {
+    try {
+        const { restaurantId } = req.user;
+        if (!restaurantId) {
+            return res.status(403).json({ error: 'Restaurant ID is required.' });
+        }
+        const orders = await Order.find({ restaurantId });
+        res.status(200).json(orders);
+    } catch (error) {
+        res.status(500).json({ error: 'An error occurred while fetching orders.' });
+    }
+};
+
+// Get all active orders for a restaurant
+const activeOrders = async (req, res) => {
+    try {
+        const { restaurantId } = req.user;
+        if (!restaurantId) {
+            return res.status(403).json({ error: 'Restaurant ID is required.' });
+        }
+        const activeOrders = await Order.find({ restaurantId, status: 'Active' });
+        res.status(200).json(activeOrders);
+    } catch (error) {
+        res.status(500).json({ error: 'An error occurred while fetching active orders.' });
+    }
+};
+
+
+// Update an order by admin
+const editOrder = async (req, res) => {
+    const { id } = req.params;
+    const { action, item } = req.body;
+
+    try {
+        let order;
+
+        switch (action) {
+            case 'addItem':
+                order = await Order.findByIdAndUpdate(
+                    id,
+                    { $push: { items: item }, updatedAt: new Date() },
+                    { new: true }
+                );
+                break;
+
+            case 'editItem':
+                order = await Order.findOneAndUpdate(
+                    { _id: id, 'items.itemId': item.itemId },
+                    { $set: { 'items.$': item, updatedAt: new Date() } },
+                    { new: true }
+                );
+                break;
+
+            case 'removeItem':
+                order = await Order.findByIdAndUpdate(
+                    id,
+                    { $pull: { items: { itemId: item.itemId } }, updatedAt: new Date() },
+                    { new: true }
+                );
+                break;
+
+            default:
+                return res.status(400).json({ error: 'Invalid action specified.' });
+        }
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found.' });
+        }
+
+        res.status(200).json(order);
+    } catch (error) {
+        res.status(500).json({ error: 'An error occurred while updating the order.' });
+    }
+}
+
+
+// Delete Order
+const deleteOrder = async (req, res) => {
+    const { id } = req.params;
+
+    // Find and delete the order by ID
+    const order = await Order.findByIdAndDelete(id);
+    if (!order) {
+        return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    // Delete the associated session using the sessionId from the order
+    const session = await Session.findOneAndDelete({ _id: order.sessionId });
+    if (!session) {
+        return res.status(404).json({ error: 'Session not found.' });
+    }
+
+    res.status(200).json({ message: 'Order and associated session deleted successfully.' });
+};
+
+
+// Mark session as completed
+const closeSession = async (req, res) => {
+    const { id } = req.params;
+
+    // Update the session's status to 'Closed'
+    const session = await Session.findByIdAndUpdate(id, { status: 'Closed', updatedAt: new Date() }, { new: true });
+    if (!session) {
+        return res.status(404).json({ error: 'Session not found.' });
+    }
+
+    res.status(200).json(session);
+};
+
+
 module.exports = {
     signupAdmin, loginAdmin, getAdminProfile, updateAdminProfile,
     getRestaurant, updateRestaurant,
     addMenuItem, getMenu, getMenuItem, updateMenuItem, deleteMenuItem,
-    generateQRCode
+    generateQRCode,
+    allSessions, activeSessions, closeSession,
+    activeOrders, allOrders, editOrder, deleteOrder
 };

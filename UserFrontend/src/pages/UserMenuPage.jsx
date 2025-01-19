@@ -1,5 +1,5 @@
 import { RecoilRoot } from "recoil";
-import MenuPage from "../MenuComponenets/MainMenuPage";
+import MenuPage from "../MenuComponenets/mainMenuPage";
 const UserMenuPage = () => {
   return (
     <RecoilRoot>
