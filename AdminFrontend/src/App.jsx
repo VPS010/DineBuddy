@@ -8,6 +8,14 @@ import LandingPage from "./pages/LandingPage";
 import AdminLogin from "./pages/Adminlogin";
 import AdminSignup from "./pages/AdminSignup";
 import DashboardPage from "./pages/DashboardPage";
+import AdminOrder from "./DashboardComponents/AdminOrders/Orders";
+import AdminOrder2 from "./DashboardComponents/AdminOrders/Order2";
+import AdminOrder3 from "./DashboardComponents/AdminOrders/Order3";
+import UnifiedAdminOrder from "./DashboardComponents/AdminOrders/Order4";
+import UnifiedAdminOrder2 from "./DashboardComponents/AdminOrders/Order5";
+
+
+
 
 // Import Components for Customers
 // import MenuPage from './pages/MenuPage';
@@ -37,6 +45,11 @@ const App = () => {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/signup" element={<AdminSignup />} />
         <Route path="/admin/dashboard" element={<DashboardPage />} />
+        <Route path="/admin/o" element={<AdminOrder />} />
+        <Route path="/admin/o2" element={<AdminOrder2 />} />
+        <Route path="/admin/o3" element={<AdminOrder3 />} />
+        <Route path="/admin/o4" element={<UnifiedAdminOrder />} />
+        <Route path="/admin/o5" element={<UnifiedAdminOrder2 />} />
 
         {/* Customer Routes */}
         {/* <Route path="/user/menu/:restaurantId" element={<MenuPage />} /> */}

@@ -16,9 +16,10 @@ import Dashboard from "../DashboardComponents/Dashboard";
 import AdminProfile from "../DashboardComponents/AdminProfile/mainAdminProfile";
 import MenuManagement from "../DashboardComponents/AdminMenu/MenuManagement";
 import KitchenScreen from "../DashboardComponents/KitchenScreen";
-import AdminOrdersPage from "../DashboardComponents/Orders";
 import QRCodeGenerator from "../DashboardComponents/QRgenerator/QRCodeGenerator";
 import SettingsPage from "../DashboardComponents/Settings/Settings";
+import UnifiedAdminOrder from "../DashboardComponents/AdminOrders/Order5";
+
 const DashboardPage = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -128,7 +129,7 @@ const DashboardPage = () => {
         {/* Conditional Rendering of Sections */}
         <div className="flex-1 overflow-y-auto p-6">
           {activeSection === "dashboard" && <Dashboard />}
-          {activeSection === "orders" && <AdminOrdersPage />}
+          {activeSection === "orders" && <UnifiedAdminOrder />}
           {activeSection === "kitchen" && <KitchenScreen />}
           {activeSection === "menu" && <MenuManagement />}
           {activeSection === "profile" && <AdminProfile />}

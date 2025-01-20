@@ -559,32 +559,49 @@ const activeSessions = async (req, res) => {
 };
 
 // Get all orders for a restaurant
-const allOrders = async (req, res) => {
-    try {
-        const { restaurantId } = req.user;
-        if (!restaurantId) {
-            return res.status(403).json({ error: 'Restaurant ID is required.' });
-        }
-        const orders = await Order.find({ restaurantId });
-        res.status(200).json(orders);
-    } catch (error) {
-        res.status(500).json({ error: 'An error occurred while fetching orders.' });
-    }
-};
 
-// Get all active orders for a restaurant
-const activeOrders = async (req, res) => {
+
+const getOrders = async (req, res) => {
     try {
-        const { restaurantId } = req.user;
-        if (!restaurantId) {
-            return res.status(403).json({ error: 'Restaurant ID is required.' });
+        // Extract filters from the query parameters
+        const { status, date } = req.query;
+
+        // Initialize the query object
+        const query = {
+            restaurantId: req.user.restaurantId, // Filter by restaurantId from token
+        };
+
+        // Apply status filter if provided
+        if (status) {
+            query.status = status; // Matches 'Active' or 'Completed'
         }
-        const activeOrders = await Order.find({ restaurantId, status: 'Active' });
-        res.status(200).json(activeOrders);
+
+        // Apply date filter if provided
+        if (date) {
+            const startOfDay = new Date(date);
+            const endOfDay = new Date(date);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            query.createdAt = { $gte: startOfDay, $lte: endOfDay };
+        }
+
+        // Fetch orders from the database
+        const orders = await Order.find(query).sort({ createdAt: -1 }); // Sort by most recent orders
+
+        res.status(200).json({
+            success: true,
+            count: orders.length,
+            data: orders,
+        });
     } catch (error) {
-        res.status(500).json({ error: 'An error occurred while fetching active orders.' });
+        console.error('Error fetching orders:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Server error',
+        });
     }
-};
+}
+
 
 
 // Update an order by admin
@@ -593,46 +610,63 @@ const editOrder = async (req, res) => {
     const { action, item } = req.body;
 
     try {
+        if (!action || !item) {
+            return res.status(400).json({ error: 'Action and item data are required.' });
+        }
+
         let order;
+        const updateTime = { updatedAt: new Date() };
 
         switch (action) {
             case 'addItem':
+                // Add a new item to the order
                 order = await Order.findByIdAndUpdate(
                     id,
-                    { $push: { items: item }, updatedAt: new Date() },
+                    { $push: { items: item }, ...updateTime },
                     { new: true }
                 );
                 break;
 
             case 'editItem':
+                // Update an existing item in the order
+                if (!item.itemId) {
+                    return res.status(400).json({ error: 'ItemId is required to edit an item.' });
+                }
+
                 order = await Order.findOneAndUpdate(
                     { _id: id, 'items.itemId': item.itemId },
-                    { $set: { 'items.$': item, updatedAt: new Date() } },
+                    { $set: { 'items.$': item, ...updateTime } },
                     { new: true }
                 );
                 break;
 
             case 'removeItem':
+                // Remove an item from the order
+                if (!item.itemId) {
+                    return res.status(400).json({ error: 'ItemId is required to remove an item.' });
+                }
+
                 order = await Order.findByIdAndUpdate(
                     id,
-                    { $pull: { items: { itemId: item.itemId } }, updatedAt: new Date() },
+                    { $pull: { items: { itemId: item.itemId } }, ...updateTime },
                     { new: true }
                 );
                 break;
 
             default:
-                return res.status(400).json({ error: 'Invalid action specified.' });
+                return res.status(400).json({ error: `Invalid action: ${action}` });
         }
 
         if (!order) {
             return res.status(404).json({ error: 'Order not found.' });
         }
 
-        res.status(200).json(order);
+        res.status(200).json({ success: true, data: order });
     } catch (error) {
+        console.error('Error editing order:', error);
         res.status(500).json({ error: 'An error occurred while updating the order.' });
     }
-}
+};
 
 
 // Delete Order
@@ -675,5 +709,5 @@ module.exports = {
     addMenuItem, getMenu, getMenuItem, updateMenuItem, deleteMenuItem,
     generateQRCode,
     allSessions, activeSessions, closeSession,
-    activeOrders, allOrders, editOrder, deleteOrder
+    getOrders, editOrder, deleteOrder
 };

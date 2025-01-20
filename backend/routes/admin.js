@@ -50,8 +50,8 @@ router.post('/qr/generate', protect, generateQRCode);
 
 router.get('/sessions', protect, allSessions);
 router.get('/sessions/active', protect, activeSessions);
-router.get('/orders', protect, allOrders);
-router.get('/orders/active', protect, activeOrders);
+router.get('/orders', protect, getOrders);
+
 router.patch('/order/:id', protect, editOrder);
 router.delete('/order/:id', protect, deleteOrder);
 router.patch('/session/:id/complete', protect, closeSession);
