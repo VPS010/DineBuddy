@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRecoilState } from "recoil";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -40,6 +40,7 @@ const Cart = ({
   tableNumber,
   restaurantId,
 }) => {
+  const cartRef = useRef(null);
   const [cart, setCart] = useRecoilState(cartState);
   const [isCartOpen, setIsCartOpen] = useRecoilState(isCartOpenState);
   const [orderedItems, setOrderedItems] = useState([]);
@@ -300,9 +301,39 @@ const Cart = ({
   const tax = Number((subtotal * 0.1).toFixed(2));
   const total = Number((subtotal + tax).toFixed(2));
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if cart is open and click is outside the cart
+      if (
+        isCartOpen &&
+        cartRef.current &&
+        !cartRef.current.contains(event.target)
+      ) {
+        // Prevent closing if clicking on elements that should open the cart
+        const isCartTrigger = event.target.closest(
+          '[data-cart-trigger="true"]'
+        );
+        if (!isCartTrigger) {
+          setIsCartOpen(false);
+        }
+      }
+    };
+
+    // Add event listener when cart is open
+    if (isCartOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    // Cleanup
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isCartOpen, setIsCartOpen]);
+
   return (
     <div
-      className={`fixed inset-0 bg-white md:inset-y-0 md:right-0 md:w-96 transform transition-transform duration-300 ${
+      ref={cartRef}
+      className={`fixed inset-y-0 right-0 w-full md:w-96 bg-white shadow-lg transform transition-transform duration-300 ${
         isCartOpen ? "translate-x-0" : "translate-x-full"
       } z-50`}
     >
