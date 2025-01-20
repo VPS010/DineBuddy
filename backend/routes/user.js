@@ -5,6 +5,7 @@ const {
     loginUser,
     getUserProfile,
     getMenu,
+    getMenuItemById,
     createSession,
     createOrder,
     placeOrder,
@@ -22,6 +23,8 @@ router.get('/profile', userAuth, getUserProfile);
 
 
 router.get('/menu/:restaurantId', getMenu);
+router.get('/menu/item/:menuItemId', getMenuItemById);
+
 router.post('/session', createSession);
 router.post('/order', createOrder);
 router.get('/order/:restaurantId/:tableNumber', getOrder);

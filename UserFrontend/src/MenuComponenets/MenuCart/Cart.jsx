@@ -5,27 +5,24 @@ import axios from "axios";
 import { cartState, isCartOpenState } from "../store/atoms";
 import { X } from "lucide-react";
 import { CartItem } from "./CartItem";
-import { OrderedItem } from "./OrderedItem";
+import OrderedItem from "./OrderedItem";
 import { CartSummary } from "./CartSummary";
 import { ConfirmationDialog } from "./ConfirmationDialog";
 import LocationVerification from "./LocationVerification";
 
-// Create axios instance with base URL, default headers, and timeout
 const api = axios.create({
   baseURL: "http://localhost:3000/api/v1",
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 10000, // 10 second timeout
+  timeout: 10000,
 });
 
-// Add request interceptor for logging
 api.interceptors.request.use((request) => {
   console.log("Starting Request:", request);
   return request;
 });
 
-// Add response interceptor for logging
 api.interceptors.response.use(
   (response) => {
     console.log("Response:", response);
@@ -56,7 +53,48 @@ const Cart = ({
     title: "",
   });
 
-  // Initialize LocationVerification hook
+  const handleOrderPlacement = async () => {
+    if (isLoading) {
+      toast.info("Please wait while we process your request...");
+      return;
+    }
+
+    try {
+      // Validate cart items before proceeding
+      const invalidItems = cart.filter((item) => {
+        const itemId = item.itemId || item._id || item.id;
+        return !itemId;
+      });
+
+      if (invalidItems.length > 0) {
+        throw new Error(
+          `Found ${invalidItems.length} invalid items in cart. Each item must have an ID.`
+        );
+      }
+
+      const currentSessionId = sessionId || (await getOrCreateSession());
+      if (!currentSessionId) {
+        throw new Error("Unable to create session");
+      }
+
+      const orderResponse = await createOrUpdateOrder(currentSessionId, cart);
+      await fetchOrderedItems();
+      setCart([]);
+
+      setOrderPlacementDialog({
+        isOpen: true,
+        title: sessionId ? "Added to your Order" : "Order Placed",
+        message: sessionId
+          ? "We updated the kitchen to prepare your additional items."
+          : "Your order has been placed! The kitchen will start preparing your items.",
+      });
+
+      toast.success(orderResponse.message || "Order processed successfully!");
+    } catch (error) {
+      handleApiError(error, "Error placing order. Please try again.");
+    }
+  };
+
   const locationVerification = LocationVerification({
     onLocationVerified: handleOrderPlacement,
     onLocationDenied: () => {
@@ -64,7 +102,6 @@ const Cart = ({
     },
   });
 
-  // Function to fetch ordered items
   const fetchOrderedItems = async () => {
     try {
       if (!tableNumber || !restaurantId) {
@@ -78,37 +115,27 @@ const Cart = ({
 
       if (response.data?.order?.items) {
         setOrderedItems(response.data.order.items);
-
-        // If we get a sessionId from the order, update it
         if (response.data.order.sessionId) {
           setSessionId(response.data.order.sessionId);
         }
       }
     } catch (error) {
       if (error.response?.status !== 404) {
-        // Don't show error for 404 as it's expected when no orders exist
         handleApiError(error, "Failed to fetch ordered items");
       }
     }
   };
 
-  // Add useEffect to fetch ordered items when component mounts and after new orders
   useEffect(() => {
     fetchOrderedItems();
   }, [tableNumber, restaurantId]);
 
-  // Function to create or get session
   const getOrCreateSession = async () => {
     setIsLoading(true);
     try {
       if (!tableNumber || !restaurantId) {
         throw new Error("Table number and restaurant ID are required");
       }
-
-      console.log("Sending session request with:", {
-        tableNumber,
-        restaurantId,
-      });
 
       const response = await api.post("/user/session", {
         tableNumber,
@@ -118,21 +145,17 @@ const Cart = ({
       const sessionData = response.data?.tableStatus;
 
       if (!sessionData?.sessionId) {
-        console.error("Invalid session response:", response.data);
         throw new Error("Invalid session data received from server");
       }
 
-      console.log("Session created successfully:", sessionData);
       setSessionId(sessionData.sessionId);
 
-      // Show success message if it's a new session
       if (response.status === 201) {
         toast.success(response.data.message);
       }
 
       return sessionData.sessionId;
     } catch (error) {
-      console.error("Error creating session:", error);
       handleApiError(error, "Failed to create session");
       return null;
     } finally {
@@ -140,10 +163,8 @@ const Cart = ({
     }
   };
 
-  // Function to handle API errors
   const handleApiError = (error, defaultMessage) => {
     if (error.response) {
-      // Server responded with error status
       const errorMessage =
         error.response.data?.error ||
         error.response.data?.message ||
@@ -151,43 +172,33 @@ const Cart = ({
       toast.error(errorMessage);
       console.error("Server Error Details:", error.response.data);
     } else if (error.request) {
-      // Request made but no response received
       toast.error(
         "Unable to connect to the server. Please check your internet connection."
       );
       console.error("Network Error:", error.request);
     } else {
-      // Error in request setup
       toast.error(error.message || defaultMessage);
       console.error("Request Error:", error);
     }
   };
 
-  // Function to create or update order
   const createOrUpdateOrder = async (sessionId, items) => {
     setIsLoading(true);
     try {
-      if (!items.length) {
+      if (!items?.length) {
         throw new Error("No items to order");
       }
 
-      const formattedItems = items.map((item, index) => {
-        // Enhanced ID handling
+      const formattedItems = items.map((item) => {
         const itemId = item.itemId || item._id || item.id;
-
         if (!itemId) {
-          throw new Error(
-            `Item "${item.name}" (at position ${index}) is missing a required ID`
-          );
+          throw new Error(`Item "${item.name}" is missing a required ID`);
         }
 
         return {
-          itemId,
-          name: item.name,
-          quantity: item.quantity,
+          itemId: itemId.toString(), // Ensure ID is a string
+          quantity: parseInt(item.quantity) || 1,
           spiceLevel: item.customizations?.spiceLevel || "Medium",
-          status: "Pending",
-          price: item.price,
         };
       });
 
@@ -210,34 +221,36 @@ const Cart = ({
       setIsLoading(false);
     }
   };
-
-  // Function to consolidate cart items
   const consolidateCart = (items) => {
     const consolidatedMap = new Map();
 
     items.forEach((item) => {
-      const key = `${item.name}-${item._id || item.itemId}-${JSON.stringify(
-        item.customizations
-      )}`;
+      // Standardize ID handling
+      const itemId = item.itemId || item._id || item.id;
+      if (!itemId) {
+        console.warn(`Item "${item.name}" missing ID`);
+        return;
+      }
+
+      const key = `${itemId}-${JSON.stringify(item.customizations || {})}`;
 
       if (consolidatedMap.has(key)) {
         const existingItem = consolidatedMap.get(key);
         consolidatedMap.set(key, {
           ...existingItem,
-          quantity: existingItem.quantity + item.quantity,
+          quantity: existingItem.quantity + (item.quantity || 1),
         });
       } else {
         consolidatedMap.set(key, {
           ...item,
-          itemId: item.itemId || item._id,
-          id: item.id || item._id,
+          itemId: itemId, // Standardize to itemId
+          quantity: item.quantity || 1,
         });
       }
     });
 
     return Array.from(consolidatedMap.values());
   };
-
   useEffect(() => {
     if (cart.length > 0) {
       const consolidated = consolidateCart(cart);
@@ -247,87 +260,10 @@ const Cart = ({
     }
   }, [cart]);
 
-  async function handleOrderPlacement() {
-    if (isLoading) {
-      toast.info("Please wait while we process your request...");
-      return;
-    }
-
-    try {
-      console.log("Current cart state:", cart);
-
-      const invalidItems = cart.filter((item) => {
-        const isInvalid = !item.id && !item.itemId;
-        if (isInvalid) {
-          console.warn("Invalid item found:", item);
-        }
-        return isInvalid;
-      });
-
-      if (invalidItems.length > 0) {
-        console.error("Invalid items found:", invalidItems);
-        throw new Error(
-          `Found ${invalidItems.length} invalid items in cart. Each item must have an id or itemId.`
-        );
-      }
-
-      const currentSessionId = sessionId || (await getOrCreateSession());
-
-      if (!currentSessionId) {
-        throw new Error("Unable to create session");
-      }
-
-      const orderResponse = await createOrUpdateOrder(currentSessionId, cart);
-
-      // Fetch the latest ordered items after placing the order
-      await fetchOrderedItems();
-
-      setCart([]);
-
-      setOrderPlacementDialog({
-        isOpen: true,
-        title: sessionId ? "Added to your Order" : "Order Placed",
-        message: sessionId
-          ? "We Updated the kitchen to prepare your additional items."
-          : "Your order placed! The kitchen will start preparing your items.",
-      });
-
-      toast.success(orderResponse.message || "Order processed successfully!");
-    } catch (error) {
-      console.error("Order placement error:", error);
-      const errorMessage = error.message.includes("invalid items")
-        ? "Some items in your cart are missing required information. Please try adding them again."
-        : "Error placing order. Please try again.";
-      handleApiError(error, errorMessage);
-    }
-  }
-
-  const inspectCartItems = () => {
-    console.log("Cart inspection results:");
-    cart.forEach((item, index) => {
-      console.log(`Item ${index + 1}:`, {
-        name: item.name,
-        id: item.id,
-        itemId: item.itemId,
-        cartId: item.cartId,
-        quantity: item.quantity,
-        customizations: item.customizations,
-      });
-    });
-  };
-
-  useEffect(() => {
-    if (cart.length > 0) {
-      console.log("Cart updated:", cart);
-      inspectCartItems();
-    }
-  }, [cart]);
-
   const updateCartItemQuantity = (cartId, newQuantity) => {
     const updatedCart = cart.map((item) =>
       item.cartId === cartId ? { ...item, quantity: newQuantity } : item
     );
-
     setCart(consolidateCart(updatedCart));
     externalUpdateCartItemQuantity(cartId, newQuantity);
   };
@@ -346,12 +282,23 @@ const Cart = ({
     locationVerification.startVerification();
   };
 
-  const subtotal = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  const tax = subtotal * 0.1;
-  const total = subtotal + tax;
+  const calculateCartTotal = (items) => {
+    return items.reduce((total, item) => {
+      const price = parseFloat(item.price);
+      const quantity = parseInt(item.quantity);
+
+      if (isNaN(price) || isNaN(quantity)) {
+        console.warn(`Invalid price or quantity for item: ${item.name}`);
+        return total;
+      }
+
+      return total + price * quantity;
+    }, 0);
+  };
+
+  const subtotal = calculateCartTotal(cart);
+  const tax = Number((subtotal * 0.1).toFixed(2));
+  const total = Number((subtotal + tax).toFixed(2));
 
   return (
     <div
@@ -360,7 +307,6 @@ const Cart = ({
       } z-50`}
     >
       <div className="flex flex-col h-full">
-        {/* Cart Header */}
         <div className="sticky top-0 p-4 border-b border-[#E8E1D3] flex justify-between items-center bg-[#F9F6F0]">
           <h2 className="text-[#2D3436] font-semibold text-lg">Your Cart</h2>
           <button
@@ -372,7 +318,6 @@ const Cart = ({
           </button>
         </div>
 
-        {/* Cart Items */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-4">
             <h3 className="text-lg font-semibold text-[#2D3436] mb-4">
@@ -411,7 +356,6 @@ const Cart = ({
           </div>
         </div>
 
-        {/* Cart Summary */}
         <div className="sticky bottom-0 bg-white border-t border-[#E8E1D3]">
           <CartSummary
             subtotal={subtotal}
@@ -423,7 +367,6 @@ const Cart = ({
         </div>
       </div>
 
-      {/* Dialogs */}
       <ConfirmationDialog
         isOpen={dialogOpen}
         title="Remove Item"

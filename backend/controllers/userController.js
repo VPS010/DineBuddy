@@ -158,6 +158,35 @@ const getMenu = async (req, res) => {
 };
 
 
+const getMenuItemById = async (req, res) => {
+    try {
+        const { menuItemId } = req.params; // Access the menu item ID from URL parameter
+
+        if (!menuItemId) {
+            return res.status(400).json({ error: 'Menu item ID is required.' });
+        }
+
+        // Fetch the specific menu item by its ID
+        const menuItem = await Menu.findById(menuItemId);
+
+        if (!menuItem) {
+            return res.status(404).json({ error: 'Menu item not found.' });
+        }
+
+        // Return the menu item details
+        res.status(200).json({
+            message: 'Menu item fetched successfully.',
+            menuItem,
+        });
+    } catch (error) {
+        console.error('Error in getMenuItemById:', error.message);
+        return res.status(500).json({ error: 'An error occurred while fetching the menu item.' });
+    }
+};
+
+
+
+
 
 // Create or get active session for a table
 const createSession = async (req, res) => {
@@ -210,6 +239,7 @@ const createSession = async (req, res) => {
 
 // Add items to an order
 // Backend: userController.js - Updated createOrder function
+// Server-side (createOrder controller)
 const createOrder = async (req, res) => {
     const { tableNumber, restaurantId, sessionId, items } = req.body;
 
@@ -219,32 +249,58 @@ const createOrder = async (req, res) => {
             _id: sessionId,
             tableNumber,
             restaurantId,
-            status: 'Active'
+            status: 'Active',
         });
 
         if (!session) {
             return res.status(404).json({
-                error: 'No active session found for this table. Please start an order.'
+                error: 'No active session found for this table. Please start an order.',
             });
         }
 
         // Validate items format before processing
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({
-                error: 'Invalid items format or empty items array'
+                error: 'Invalid items format or empty items array',
             });
         }
 
-        // Validate each item has required fields
-        const invalidItems = items.filter(item =>
-            !item.itemId || !item.name || !item.quantity
+        // Enrich items with menu details and ensure valid prices
+        const enrichedItems = await Promise.all(
+            items.map(async (item) => {
+                const menuItem = await Menu.findById(item.itemId);
+                if (!menuItem) {
+                    throw new Error(`Menu item with ID ${item.itemId} not found`);
+                }
+
+                // Ensure price is a valid number
+                if (typeof menuItem.price !== 'number' || isNaN(menuItem.price)) {
+                    throw new Error(`Invalid price for menu item ${menuItem.name}`);
+                }
+
+                return {
+                    itemId: menuItem._id,
+                    name: menuItem.name,
+                    price: menuItem.price,
+                    image: menuItem.image || null,
+                    spiceLevel: item.spiceLevel || menuItem.spiceLevel,
+                    quantity: parseInt(item.quantity) || 1, // Ensure quantity is a number
+                };
+            })
         );
 
-        if (invalidItems.length > 0) {
-            return res.status(400).json({
-                error: 'Invalid item format',
-                details: 'Each item must have itemId, name, and quantity'
-            });
+        // Calculate total amount with validation
+        const totalAmount = enrichedItems.reduce((total, item) => {
+            const itemTotal = item.price * item.quantity;
+            if (isNaN(itemTotal)) {
+                throw new Error(`Invalid total calculation for item ${item.name}`);
+            }
+            return total + itemTotal;
+        }, 0);
+
+        // Validate total amount
+        if (isNaN(totalAmount)) {
+            throw new Error('Total amount calculation resulted in NaN');
         }
 
         // Find an existing order or create a new one
@@ -252,42 +308,96 @@ const createOrder = async (req, res) => {
             sessionId: session._id,
             restaurantId,
             tableNumber,
-            status: 'Active'
+            status: 'Active',
         });
 
+        // Inside createOrder function, replace the consolidation section with:
+        // Inside createOrder function:
+
         if (order) {
-            // Update existing order by merging new items with existing ones
+            // Merge existing items with new items
             const existingItems = order.items || [];
-            const mergedItems = [...existingItems, ...items];
+            const mergedItems = [...existingItems, ...enrichedItems];
 
-            // Consolidate quantities for items with same itemId
-            const consolidatedItems = mergedItems.reduce((acc, item) => {
-                const existingItem = acc.find(i => i.itemId === item.itemId &&
-                    JSON.stringify(i.spiceLevel) === JSON.stringify(item.spiceLevel));
-
-                if (existingItem) {
-                    existingItem.quantity += item.quantity;
-                } else {
-                    acc.push({ ...item });
+            // Validate and normalize items before consolidation
+            const validMergedItems = mergedItems.filter(item => {
+                if (!item.itemId) {
+                    console.warn('Skipping item due to missing itemId:', item);
+                    return false;
                 }
-                return acc;
+                // Ensure price and quantity are valid numbers
+                if (typeof item.price !== 'number' || isNaN(item.price)) {
+                    console.warn('Skipping item due to invalid price:', item);
+                    return false;
+                }
+                if (!item.quantity || isNaN(parseInt(item.quantity))) {
+                    console.warn('Skipping item due to invalid quantity:', item);
+                    return false;
+                }
+                return true;
+            });
+
+            // Consolidate quantities for items with the same itemId and spiceLevel
+            const consolidatedItems = validMergedItems.reduce((acc, item) => {
+                try {
+                    const existingItem = acc.find(i =>
+                        i.itemId?.toString() === item.itemId?.toString() &&
+                        i.spiceLevel === item.spiceLevel
+                    );
+
+                    if (existingItem) {
+                        existingItem.quantity = parseInt(existingItem.quantity) + parseInt(item.quantity);
+                        existingItem.price = Number(existingItem.price);
+                    } else {
+                        acc.push({
+                            ...item,
+                            quantity: parseInt(item.quantity),
+                            price: Number(item.price)
+                        });
+                    }
+                    return acc;
+                } catch (err) {
+                    console.error('Error processing item:', item, err);
+                    return acc;
+                }
             }, []);
 
+            // Recalculate total amount after consolidation with explicit number handling
+            const newTotalAmount = consolidatedItems.reduce((total, item) => {
+                const itemPrice = Number(item.price);
+                const itemQuantity = parseInt(item.quantity);
+
+                if (isNaN(itemPrice) || isNaN(itemQuantity)) {
+                    console.warn('Invalid price or quantity for item:', item);
+                    return total;
+                }
+
+                const itemTotal = itemPrice * itemQuantity;
+                return total + itemTotal;
+            }, 0);
+
+            // Validate the final total amount before saving
+            if (isNaN(newTotalAmount)) {
+                throw new Error('Invalid total amount calculation');
+            }
+
             order.items = consolidatedItems;
+            order.totalAmount = newTotalAmount;
             order.updatedAt = new Date();
             await order.save();
 
             return res.status(200).json({
                 message: 'Order updated successfully',
-                order
+                order,
             });
         } else {
-            // Create new order
+            // Create a new order
             order = new Order({
                 tableNumber,
                 sessionId: session._id,
                 restaurantId,
-                items,
+                items: enrichedItems,
+                totalAmount,
                 status: 'Active',
             });
 
@@ -295,26 +405,26 @@ const createOrder = async (req, res) => {
 
             return res.status(201).json({
                 message: 'New order created successfully',
-                order
+                order,
             });
         }
     } catch (error) {
         console.error('Error in createOrder:', error);
 
-        // Send more specific error messages
         if (error.name === 'ValidationError') {
             return res.status(400).json({
                 error: 'Validation error',
-                details: Object.values(error.errors).map(err => err.message)
+                details: Object.values(error.errors).map((err) => err.message),
             });
         }
 
         res.status(500).json({
             error: 'An error occurred while processing the order',
-            details: error.message
+            details: error.message,
         });
     }
 };
+
 
 const getOrder = async (req, res) => {
     const { restaurantId, tableNumber } = req.params;
@@ -368,7 +478,7 @@ const getOrder = async (req, res) => {
 
 module.exports = {
     signupUser, loginUser, getUserProfile,
-    getMenu,
+    getMenu, getMenuItemById,
     createSession, createOrder, getOrder
 };
 
