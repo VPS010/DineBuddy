@@ -22,7 +22,9 @@ const { signupAdmin,
     allOrders,
     editOrder,
     closeSession,
-    deleteOrder
+    deleteOrder,
+    orderStatus,
+    orderPay
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -47,14 +49,12 @@ router.delete('/menu/:id', protect, deleteMenuItem);
 
 router.post('/qr/generate', protect, generateQRCode);
 
-
-router.get('/sessions', protect, allSessions);
-router.get('/sessions/active', protect, activeSessions);
 router.get('/orders', protect, getOrders);
-
 router.patch('/order/:id', protect, editOrder);
 router.delete('/order/:id', protect, deleteOrder);
-router.patch('/session/:id/complete', protect, closeSession);
+router.put('/order/complete/:orderId', protect, orderStatus);
+router.put('/order/pay/:orderId', protect, orderPay);
+
 
 // router.get('/orders', getOrders);
 // router.get('/order/:id', getOrder);

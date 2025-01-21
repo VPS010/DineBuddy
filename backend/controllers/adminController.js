@@ -248,7 +248,7 @@ const updateRestaurant = async (req, res) => {
 const getRestaurant = async (req, res) => {
     try {
         // Find the restaurant associated with the logged-in admin
-        const restaurant = await Restaurant.findOne({ adminId: req.user.id });
+        const restaurant = await Restaurant.findOne({ adminId: req.user.id });//from Auth middleware
 
         // If the restaurant is not found, return a 404 error
         if (!restaurant) {
@@ -601,54 +601,171 @@ const getOrders = async (req, res) => {
         });
     }
 }
-
-
-
-// Update an order by admin
 const editOrder = async (req, res) => {
     const { id } = req.params;
-    const { action, item } = req.body;
+    const { action, item, items, customerName } = req.body;
 
     try {
-        if (!action || !item) {
-            return res.status(400).json({ error: 'Action and item data are required.' });
+        if (!action) {
+            return res.status(400).json({ error: 'Action is required.' });
         }
 
         let order;
         const updateTime = { updatedAt: new Date() };
 
         switch (action) {
-            case 'addItem':
-                // Add a new item to the order
+            case 'bulkEdit':
+                // Validate items array for bulk edit
+                if (!Array.isArray(items) || items.length === 0) {
+                    return res.status(400).json({ error: 'Valid items array is required for bulk edit.' });
+                }
+
+                const bulkEditUpdate = {
+                    items: items,
+                    ...updateTime,
+                    totalAmount: {
+                        $reduce: {
+                            input: items,
+                            initialValue: 0,
+                            in: {
+                                $add: ["$$value", { $multiply: ["$$this.price", "$$this.quantity"] }]
+                            }
+                        }
+                    }
+                };
+
+                // Add customerName to update if provided
+                if (customerName !== undefined) {
+                    bulkEditUpdate.customerName = customerName;
+                }
+
                 order = await Order.findByIdAndUpdate(
                     id,
-                    { $push: { items: item }, ...updateTime },
+                    [{ $set: bulkEditUpdate }],
+                    { new: true }
+                );
+                break;
+
+            case 'addItem':
+                // Validate single item for add
+                if (!item) {
+                    return res.status(400).json({ error: 'Item data is required for adding an item.' });
+                }
+
+                order = await Order.findByIdAndUpdate(
+                    id,
+                    [{
+                        $set: {
+                            items: { $concatArrays: ["$items", [item]] },
+                            ...updateTime,
+                            totalAmount: {
+                                $reduce: {
+                                    input: { $concatArrays: ["$items", [item]] },
+                                    initialValue: 0,
+                                    in: {
+                                        $add: ["$$value", { $multiply: ["$$this.price", "$$this.quantity"] }]
+                                    }
+                                }
+                            }
+                        }
+                    }],
                     { new: true }
                 );
                 break;
 
             case 'editItem':
-                // Update an existing item in the order
-                if (!item.itemId) {
+                // Validate single item for edit
+                if (!item || !item.itemId) {
                     return res.status(400).json({ error: 'ItemId is required to edit an item.' });
                 }
 
                 order = await Order.findOneAndUpdate(
                     { _id: id, 'items.itemId': item.itemId },
-                    { $set: { 'items.$': item, ...updateTime } },
+                    [{
+                        $set: {
+                            items: {
+                                $map: {
+                                    input: "$items",
+                                    as: "i",
+                                    in: {
+                                        $cond: [
+                                            { $eq: ["$$i.itemId", item.itemId] },
+                                            item,
+                                            "$$i"
+                                        ]
+                                    }
+                                }
+                            },
+                            ...updateTime
+                        }
+                    },
+                    {
+                        $set: {
+                            totalAmount: {
+                                $reduce: {
+                                    input: "$items",
+                                    initialValue: 0,
+                                    in: {
+                                        $add: ["$$value", { $multiply: ["$$this.price", "$$this.quantity"] }]
+                                    }
+                                }
+                            }
+                        }
+                    }],
                     { new: true }
                 );
                 break;
 
             case 'removeItem':
-                // Remove an item from the order
-                if (!item.itemId) {
+                // Validate single item for remove
+                if (!item || !item.itemId) {
                     return res.status(400).json({ error: 'ItemId is required to remove an item.' });
                 }
 
                 order = await Order.findByIdAndUpdate(
                     id,
-                    { $pull: { items: { itemId: item.itemId } }, ...updateTime },
+                    [{
+                        $set: {
+                            items: {
+                                $filter: {
+                                    input: "$items",
+                                    cond: { $ne: ["$$this.itemId", item.itemId] }
+                                }
+                            },
+                            ...updateTime
+                        }
+                    },
+                    {
+                        $set: {
+                            totalAmount: {
+                                $reduce: {
+                                    input: "$items",
+                                    initialValue: 0,
+                                    in: {
+                                        $add: ["$$value", { $multiply: ["$$this.price", "$$this.quantity"] }]
+                                    }
+                                }
+                            }
+                        }
+                    }],
+                    { new: true }
+                );
+                break;
+
+            case 'updateCustomerName':
+                // Add a specific case for customer name updates
+                if (customerName === undefined) {
+                    return res.status(400).json({ error: 'Customer name is required for this action.' });
+                }
+
+                order = await Order.findByIdAndUpdate(
+                    id,
+                    [{
+                        $set: {
+                            customerName: customerName,
+                            ...updateTime
+                        }
+                    }],
                     { new: true }
                 );
                 break;
@@ -688,26 +805,115 @@ const deleteOrder = async (req, res) => {
     res.status(200).json({ message: 'Order and associated session deleted successfully.' });
 };
 
+const orderStatus = async (req, res) => {
+    try {
+        const { orderId } = req.params;
 
-// Mark session as completed
-const closeSession = async (req, res) => {
-    const { id } = req.params;
+        // Find the order to ensure it exists
+        const order = await Order.findById(orderId);
 
-    // Update the session's status to 'Closed'
-    const session = await Session.findByIdAndUpdate(id, { status: 'Closed', updatedAt: new Date() }, { new: true });
-    if (!session) {
-        return res.status(404).json({ error: 'Session not found.' });
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                error: 'Order not found'
+            });
+        }
+
+        // Directly set the order status to 'Closed'
+        const updatedOrder = await Order.findByIdAndUpdate(
+            orderId,
+            {
+                status: 'Closed',
+                updatedAt: new Date()
+            },
+            { new: true }
+        );
+
+        // Update the associated session status to 'Closed' if session exists
+        if (order.sessionId) {
+            await Session.findByIdAndUpdate(
+                { _id: order.sessionId },
+                {
+                    status: 'Closed',
+                    updatedAt: new Date()
+                }
+            );
+        }
+
+        // Send response with the updated order
+        res.status(200).json({
+            success: true,
+            order: updatedOrder,
+            message: 'Order and associated session status updated to Closed'
+        });
+    } catch (error) {
+        console.error('Error in orderStatus:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error updating the order status'
+        });
     }
-
-    res.status(200).json(session);
 };
+const orderPay = async (req, res) => {
+    try {
+        const { orderId } = req.params;
 
+        // Find the order by ID
+        const order = await Order.findById(orderId);
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // Check if the order is already paid
+        if (order.paymentStatus === 'Paid') {
+            return res.status(400).json({ message: 'Order is already marked as Paid' });
+        }
+
+        // Update payment status to 'Paid', order status to 'Closed'
+        const updatedOrder = await Order.findByIdAndUpdate(
+            orderId,
+            {
+                paymentStatus: 'Paid',
+                status: 'Closed',
+                updatedAt: new Date()
+            },
+            { new: true }
+        );
+
+        // Update associated session to 'Closed'
+        const updatedSession = await Session.findByIdAndUpdate(
+            order.sessionId,
+            {
+                status: 'Closed',
+                updatedAt: new Date()
+            },
+            { new: true }
+        );
+
+        // If session not found, respond with an error
+        if (!updatedSession) {
+            return res.status(404).json({ message: 'Session not found for this order' });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Order successfully marked as Paid, status set to 'Closed', and session closed.`,
+            order: updatedOrder,
+            session: updatedSession
+        });
+    } catch (error) {
+        console.error('Error in orderPay:', error);
+        res.status(500).json({ error: 'Error updating order and session statuses' });
+    }
+};
 
 module.exports = {
     signupAdmin, loginAdmin, getAdminProfile, updateAdminProfile,
     getRestaurant, updateRestaurant,
     addMenuItem, getMenu, getMenuItem, updateMenuItem, deleteMenuItem,
     generateQRCode,
-    allSessions, activeSessions, closeSession,
-    getOrders, editOrder, deleteOrder
+    allSessions, activeSessions,
+    getOrders, editOrder, deleteOrder,
+    orderStatus, orderPay
 };

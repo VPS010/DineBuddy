@@ -18,7 +18,7 @@ import MenuManagement from "../DashboardComponents/AdminMenu/MenuManagement";
 import KitchenScreen from "../DashboardComponents/KitchenScreen";
 import QRCodeGenerator from "../DashboardComponents/QRgenerator/QRCodeGenerator";
 import SettingsPage from "../DashboardComponents/Settings/Settings";
-import UnifiedAdminOrder from "../DashboardComponents/AdminOrders/mainOrder";
+import UnifiedAdminOrder from "../DashboardComponents/AdminOrders/UnifiedAdminOrder";
 
 const DashboardPage = () => {
   const navigate = useNavigate();

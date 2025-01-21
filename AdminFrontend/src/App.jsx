@@ -8,6 +8,7 @@ import LandingPage from "./pages/LandingPage";
 import AdminLogin from "./pages/Adminlogin";
 import AdminSignup from "./pages/AdminSignup";
 import DashboardPage from "./pages/DashboardPage";
+import OrdersPageDesign from "./DashboardComponents/Orders"
 
 // Import Components for Customers
 // import MenuPage from './pages/MenuPage';
@@ -37,6 +38,7 @@ const App = () => {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/signup" element={<AdminSignup />} />
         <Route path="/admin/dashboard" element={<DashboardPage />} />
+        <Route path="/admin/o" element={<OrdersPageDesign />} />
 
         {/* Customer Routes */}
         {/* <Route path="/user/menu/:restaurantId" element={<MenuPage />} /> */}

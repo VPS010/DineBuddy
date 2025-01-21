@@ -13,6 +13,10 @@ const orderSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  customerName: {
+    type: String,
+    default: "Valued Customer"
+  },
   items: [
     {
       itemId: {
@@ -54,8 +58,13 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Active', 'Completed'],
+    enum: ['Active', 'Closed'],
     default: 'Active',
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['Unpaid', 'Paid'],
+    default: "Unpaid"
   },
   createdAt: {
     type: Date,
