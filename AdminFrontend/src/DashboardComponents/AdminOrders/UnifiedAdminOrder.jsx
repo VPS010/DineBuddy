@@ -20,6 +20,31 @@ const UnifiedAdminOrder = () => {
 
   const TAX_RATE = 0.18;
 
+  // Helper function to check if a date falls within the selected time range
+  const isDateInRange = (date) => {
+    const orderDate = new Date(date);
+    const now = new Date();
+
+    if (timeFilter === "today") {
+      const startOfDay = new Date(now);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(now);
+      endOfDay.setHours(23, 59, 59, 999);
+      return orderDate >= startOfDay && orderDate <= endOfDay;
+    } else if (timeFilter === "week") {
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      return orderDate >= startOfWeek;
+    } else if (timeFilter === "month") {
+      const startOfMonth = new Date(now);
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      return orderDate >= startOfMonth;
+    }
+    return true; // For "all" time filter
+  };
+
   // Fetch restaurant details
   const fetchRestaurantDetails = async () => {
     try {
@@ -50,40 +75,8 @@ const UnifiedAdminOrder = () => {
   // Fetch orders
   const fetchOrders = async () => {
     try {
-      const params = new URLSearchParams();
-
-      // Add status-based filtering
-      if (statusFilter !== "all") {
-        params.append("paymentStatus", statusFilter);
-      }
-
-      // Add time-based filtering
-      const now = new Date();
-      if (timeFilter === "today") {
-        // Set to start of current day
-        const startOfDay = new Date(now);
-        startOfDay.setHours(0, 0, 0, 0);
-        params.append("startDate", startOfDay.toISOString());
-
-        const endOfDay = new Date(now);
-        endOfDay.setHours(23, 59, 59, 999);
-        params.append("endDate", endOfDay.toISOString());
-      } else if (timeFilter === "week") {
-        // Set to start of current week
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
-        startOfWeek.setHours(0, 0, 0, 0);
-        params.append("startDate", startOfWeek.toISOString());
-      } else if (timeFilter === "month") {
-        // Set to start of current month
-        const startOfMonth = new Date(now);
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-        params.append("startDate", startOfMonth.toISOString());
-      }
-
       const response = await axios.get(
-        `http://localhost:3000/api/v1/admin/orders?${params.toString()}`,
+        "http://localhost:3000/api/v1/admin/orders",
         {
           headers: {
             Authorization: localStorage.getItem("authorization"),
@@ -117,7 +110,7 @@ const UnifiedAdminOrder = () => {
 
   useEffect(() => {
     fetchOrders();
-  }, [timeFilter, statusFilter]);
+  }, []);
 
   // Initial data fetch
   useEffect(() => {
@@ -135,6 +128,20 @@ const UnifiedAdminOrder = () => {
 
     loadData();
   }, []);
+
+  // Get orders filtered by date range
+  const getDateFilteredOrders = () => {
+    return orders.filter((order) => isDateInRange(order.createdAt));
+  };
+
+  // Get orders filtered by both date and payment status
+  const getFilteredOrders = () => {
+    const dateFiltered = getDateFilteredOrders();
+    if (statusFilter === "all") {
+      return dateFiltered;
+    }
+    return dateFiltered.filter((order) => order.paymentStatus === statusFilter);
+  };
 
   // Refetch orders when status filter changes
   useEffect(() => {
@@ -509,13 +516,15 @@ const UnifiedAdminOrder = () => {
     document.body.removeChild(link);
   };
 
-  const filteredOrders = orders.filter((order) => {
+  const filteredOrders = getFilteredOrders().filter((order) => {
     const matchesSearch =
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.tableNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
+
+  const dateFilteredOrders = getDateFilteredOrders();
 
   if (loading) {
     return (
@@ -528,6 +537,7 @@ const UnifiedAdminOrder = () => {
   if (error) {
     return <div className="text-red-600 text-center p-4">{error}</div>;
   }
+
   return (
     <div className="min-h-screen top-0 mx-auto flex flex-col bg-gray-100">
       <header className="bg-white shadow-sm">
@@ -538,7 +548,7 @@ const UnifiedAdminOrder = () => {
 
       <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <OrderStats
-          orders={orders}
+          orders={dateFilteredOrders} // Use date filtered orders for stats
           showRevenue={showRevenue}
           setShowRevenue={setShowRevenue}
           TAX_RATE={TAX_RATE}
@@ -613,7 +623,6 @@ const UnifiedAdminOrder = () => {
           handleDeleteOrder={handleDeleteOrder}
         />
 
-        {/* Keep the rest of the component the same */}
         <div className="mt-6 flex gap-4">
           <Button
             variant="ghost"
