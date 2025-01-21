@@ -560,33 +560,33 @@ const activeSessions = async (req, res) => {
 
 // Get all orders for a restaurant
 
-
 const getOrders = async (req, res) => {
     try {
         // Extract filters from the query parameters
-        const { status, date } = req.query;
+        const { paymentStatus, startDate, endDate } = req.query;
 
         // Initialize the query object
         const query = {
-            restaurantId: req.user.restaurantId, // Filter by restaurantId from token
+            restaurantId: req.user.restaurantId,
         };
 
-        // Apply status filter if provided
-        if (status) {
-            query.status = status; // Matches 'Active' or 'Completed'
+        // Apply payment status filter if provided
+        if (paymentStatus) {
+            query.paymentStatus = paymentStatus;
         }
 
-        // Apply date filter if provided
-        if (date) {
-            const startOfDay = new Date(date);
-            const endOfDay = new Date(date);
-            endOfDay.setHours(23, 59, 59, 999);
+        // Apply date range filter if provided
+        if (startDate) {
+            query.createdAt = { $gte: new Date(startDate) };
 
-            query.createdAt = { $gte: startOfDay, $lte: endOfDay };
+            if (endDate) {
+                query.createdAt.$lte = new Date(endDate);
+            }
         }
 
         // Fetch orders from the database
-        const orders = await Order.find(query).sort({ createdAt: -1 }); // Sort by most recent orders
+        const orders = await Order.find(query)
+            .sort({ createdAt: -1 }); // Sort by most recent orders
 
         res.status(200).json({
             success: true,
@@ -600,7 +600,10 @@ const getOrders = async (req, res) => {
             error: 'Server error',
         });
     }
-}
+};
+
+
+
 const editOrder = async (req, res) => {
     const { id } = req.params;
     const { action, item, items, customerName } = req.body;

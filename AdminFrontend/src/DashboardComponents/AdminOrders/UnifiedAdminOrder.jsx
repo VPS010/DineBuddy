@@ -12,9 +12,10 @@ const UnifiedAdminOrder = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [hasChanges, setHasChanges] = useState(false);
   const [showRevenue, setShowRevenue] = useState(true);
+  const [timeFilter, setTimeFilter] = useState("today");
+  const [statusFilter, setStatusFilter] = useState("Unpaid");
   const printRef = useRef();
 
   const TAX_RATE = 0.18;
@@ -49,25 +50,51 @@ const UnifiedAdminOrder = () => {
   // Fetch orders
   const fetchOrders = async () => {
     try {
-      const params = {};
+      const params = new URLSearchParams();
+
+      // Add status-based filtering
       if (statusFilter !== "all") {
-        params.status = statusFilter;
+        params.append("paymentStatus", statusFilter);
+      }
+
+      // Add time-based filtering
+      const now = new Date();
+      if (timeFilter === "today") {
+        // Set to start of current day
+        const startOfDay = new Date(now);
+        startOfDay.setHours(0, 0, 0, 0);
+        params.append("startDate", startOfDay.toISOString());
+
+        const endOfDay = new Date(now);
+        endOfDay.setHours(23, 59, 59, 999);
+        params.append("endDate", endOfDay.toISOString());
+      } else if (timeFilter === "week") {
+        // Set to start of current week
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+        params.append("startDate", startOfWeek.toISOString());
+      } else if (timeFilter === "month") {
+        // Set to start of current month
+        const startOfMonth = new Date(now);
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        params.append("startDate", startOfMonth.toISOString());
       }
 
       const response = await axios.get(
-        "http://localhost:3000/api/v1/admin/orders",
+        `http://localhost:3000/api/v1/admin/orders?${params.toString()}`,
         {
           headers: {
             Authorization: localStorage.getItem("authorization"),
           },
-          params,
         }
       );
 
       const formattedOrders = response.data.data.map((order) => ({
         id: order._id,
         tableNumber: order.tableNumber,
-        status: order.status, // Remove toLowerCase()
+        status: order.status,
         amount: order.totalAmount,
         createdAt: new Date(order.createdAt),
         items: order.items.map((item) => ({
@@ -87,6 +114,10 @@ const UnifiedAdminOrder = () => {
       setError("Failed to load orders");
     }
   };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [timeFilter, statusFilter]);
 
   // Initial data fetch
   useEffect(() => {
@@ -483,9 +514,7 @@ const UnifiedAdminOrder = () => {
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.tableNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   if (loading) {
@@ -499,16 +528,15 @@ const UnifiedAdminOrder = () => {
   if (error) {
     return <div className="text-red-600 text-center p-4">{error}</div>;
   }
-
   return (
     <div className="min-h-screen top-0 mx-auto flex flex-col bg-gray-100">
-      <header className="bg-white shadow-sm ">
-        <div className=" mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className="bg-white shadow-sm">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
         </div>
       </header>
 
-      <main className="w-full  mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <OrderStats
           orders={orders}
           showRevenue={showRevenue}
@@ -516,7 +544,8 @@ const UnifiedAdminOrder = () => {
           TAX_RATE={TAX_RATE}
         />
 
-        <div className="mb-6 flex flex-wrap gap-4">
+        <div className="mb-6 flex flex-wrap items-center gap-4">
+          {/* Search Bar */}
           <input
             type="text"
             placeholder="Search orders..."
@@ -524,15 +553,55 @@ const UnifiedAdminOrder = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+
+          {/* Time Filter Dropdown */}
           <select
-            className="p-2 border rounded"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            className="p-2 border rounded bg-white"
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value)}
           >
-            <option value="all">All Status</option>
-            <option value="Unpaid">Unpaid</option>
-            <option value="Paid">Paid</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="all">All Orders</option>
           </select>
+
+          {/* Status Filter Buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant={statusFilter === "all" ? "default" : "ghost"}
+              onClick={() => setStatusFilter("all")}
+              className={`px-6 py-1 ${
+                statusFilter === "all"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              All
+            </Button>
+            <Button
+              variant={statusFilter === "Unpaid" ? "default" : "ghost"}
+              onClick={() => setStatusFilter("Unpaid")}
+              className={`px-6 py-1 ${
+                statusFilter === "Unpaid"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              Unpaid
+            </Button>
+            <Button
+              variant={statusFilter === "Paid" ? "default" : "ghost"}
+              onClick={() => setStatusFilter("Paid")}
+              className={`px-6 py-1 ${
+                statusFilter === "Paid"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              Paid
+            </Button>
+          </div>
         </div>
 
         <OrderTable
@@ -544,6 +613,7 @@ const UnifiedAdminOrder = () => {
           handleDeleteOrder={handleDeleteOrder}
         />
 
+        {/* Keep the rest of the component the same */}
         <div className="mt-6 flex gap-4">
           <Button
             variant="ghost"
@@ -577,4 +647,5 @@ const UnifiedAdminOrder = () => {
     </div>
   );
 };
+
 export default UnifiedAdminOrder;
