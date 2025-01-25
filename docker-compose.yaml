@@ -1,0 +1,41 @@
+services:
+  
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    networks:
+      - servitnet
+    depends_on:
+      - mongoDB
+
+  userfrontend:
+    build: ./UserFrontend
+    ports:
+      - "5173:5173"
+    networks:
+      - servitnet
+
+  adminfrontend:
+    build: ./AdminFrontend
+    ports:
+      - "5175:5175"
+    networks:
+      - servitnet
+
+  mongoDB:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    networks:
+      - servitnet
+    volumes:
+      - mongo-data:/data/db
+
+networks:
+  servitnet:
+    driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local

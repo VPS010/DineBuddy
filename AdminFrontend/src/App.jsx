@@ -5,7 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 
 // Import Components for Admin
-import AdminLogin from "./pages/Adminlogin";
+import AdminLogin from "./pages/AdminLogin";
 import AdminSignup from "./pages/AdminSignup";
 import DashboardPage from "./pages/DashboardPage";
 import OrdersPageDesign from "./DashboardComponents/Orders"

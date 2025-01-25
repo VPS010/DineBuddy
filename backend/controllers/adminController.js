@@ -1,4 +1,4 @@
-const { Admin } = require('../models/admin');
+const { Admin } = require('../models/Admin');
 const { Restaurant } = require('../models/Restaurant');
 const { Menu } = require('../models/Menu');
 const generateQRcode = require('../utils/qrCodeGenerator')
@@ -290,8 +290,9 @@ const uploadToImgBB = async (base64Image) => {
 
         const response = await axios.post('https://api.imgbb.com/1/upload', formData, {
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            timeout: 60000, // Set a generous timeout (60 seconds)
         });
 
         if (response.data && response.data.data && response.data.data.url) {

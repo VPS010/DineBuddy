@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const connectDB = async () => {
     try {
         // Connect to the MongoDB database
-        const conn = await mongoose.connect(process.env.MONGO_URL, {
+        const conn = await mongoose.connect("mongodb://mongoDB:27017/Servit", {
             serverSelectionTimeoutMS: 30000, // 30 seconds
             socketTimeoutMS: 45000,         // 45 seconds
         });
