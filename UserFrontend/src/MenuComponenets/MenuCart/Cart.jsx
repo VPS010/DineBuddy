@@ -128,9 +128,18 @@ const Cart = ({
   };
 
   useEffect(() => {
+    // Initial fetch
     fetchOrderedItems();
+
+    // Set up polling interval
+    const intervalId = setInterval(fetchOrderedItems, 30000); // 30 seconds
+
+    // Cleanup function to clear interval when component unmounts
+    // or when tableNumber/restaurantId changes
+    return () => clearInterval(intervalId);
   }, [tableNumber, restaurantId]);
 
+  
   const getOrCreateSession = async () => {
     setIsLoading(true);
     try {

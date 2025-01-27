@@ -13,7 +13,7 @@ const LandingPage = () => {
           alt="bg image"
         />
       </div>
-      <div className="absolute inset-0 gap-7 bg-stone-100 bg-opacity-90 min-h-screen md:flex flex-row justify-center ">
+      <div className="absolute inset-0 gap-7 bg-stone-100 bg-opacity-85 min-h-screen md:flex flex-row justify-center ">
         <div className="flex items-center justify-center ">
           <img
             src="/herosec.png"
@@ -27,10 +27,10 @@ const LandingPage = () => {
             {/* Text content */}
             <div className="max-w-3xl flex flex-col justify-center">
               <h1 className="text-7xl font-mono text-center flex flex-col sm:text-left font-extrabold text-stone-800 md:text-6xl">
-                FoodInk
+                SERVIT
               </h1>
               <h1 className="flex flex-col text-center text-5xl text-maroon sm:text-left md:text-6xl font-serif font-medium mb-6 ">
-              Your Digital Waiter
+              Your Personal Digital Waiter
                 <span className="block text-emerald-900">Effortless Ordering & Dining</span>
               </h1>
 
