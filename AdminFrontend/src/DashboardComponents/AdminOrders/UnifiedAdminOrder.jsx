@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
+import { Plus } from "lucide-react";
 import Button from "./Button";
 import OrderStats from "./OrderStats";
 import OrderTable from "./OrderTable";
@@ -16,8 +17,10 @@ const UnifiedAdminOrder = () => {
   const [showRevenue, setShowRevenue] = useState(true);
   const [timeFilter, setTimeFilter] = useState("today");
   const [statusFilter, setStatusFilter] = useState("Unpaid");
-  const printRef = useRef();
+  const [menuItems, setMenuItems] = useState([]);
 
+  const printRef = useRef();
+  const pollingIntervalRef = useRef(null);
   const TAX_RATE = 0.18;
 
   // Helper function to check if a date falls within the selected time range
@@ -44,6 +47,31 @@ const UnifiedAdminOrder = () => {
     }
     return true; // For "all" time filter
   };
+
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(
+          "http://localhost:3000/api/v1/admin/menu",
+          {
+            headers: {
+              Authorization: localStorage.getItem("authorization"),
+            },
+          }
+        );
+        setMenuItems(response.data.menuItems);
+        setError(null);
+      } catch (err) {
+        setError("Failed to fetch menu items");
+        console.error("Error fetching menu items:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMenuItems();
+  }, []);
 
   // Fetch restaurant details
   const fetchRestaurantDetails = async () => {
@@ -102,6 +130,7 @@ const UnifiedAdminOrder = () => {
       }));
 
       setOrders(formattedOrders);
+      console.log(formattedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
       setError("Failed to load orders");
@@ -109,7 +138,22 @@ const UnifiedAdminOrder = () => {
   };
 
   useEffect(() => {
-    fetchOrders();
+    // Start polling orders every 10 seconds
+    const startPolling = () => {
+      pollingIntervalRef.current = setInterval(() => {
+        fetchOrders();
+      }, 5000); // 5 seconds
+    };
+
+    // Start polling when component mounts
+    startPolling();
+
+    // Clean up polling interval when component unmounts
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
   }, []);
 
   // Initial data fetch
@@ -554,62 +598,74 @@ const UnifiedAdminOrder = () => {
           TAX_RATE={TAX_RATE}
         />
 
-        <div className="mb-6 flex flex-wrap items-center gap-4">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           {/* Search Bar */}
-          <input
-            type="text"
-            placeholder="Search orders..."
-            className="p-2 border rounded"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <div className="flex flex-wrap gap-4">
+            <input
+              type="text"
+              placeholder="Search orders..."
+              className="p-2 border rounded"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
 
-          {/* Time Filter Dropdown */}
-          <select
-            className="p-2 border rounded bg-white"
-            value={timeFilter}
-            onChange={(e) => setTimeFilter(e.target.value)}
-          >
-            <option value="today">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="all">All Orders</option>
-          </select>
+            {/* Time Filter Dropdown */}
+            <select
+              className="p-2 border rounded bg-white"
+              value={timeFilter}
+              onChange={(e) => setTimeFilter(e.target.value)}
+            >
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="all">All Orders</option>
+            </select>
 
-          {/* Status Filter Buttons */}
-          <div className="flex gap-2">
+            {/* Status Filter Buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant={statusFilter === "all" ? "default" : "ghost"}
+                onClick={() => setStatusFilter("all")}
+                className={`px-6 py-1 ${
+                  statusFilter === "all"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                All
+              </Button>
+              <Button
+                variant={statusFilter === "Unpaid" ? "default" : "ghost"}
+                onClick={() => setStatusFilter("Unpaid")}
+                className={`px-6 py-1 ${
+                  statusFilter === "Unpaid"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                Unpaid
+              </Button>
+              <Button
+                variant={statusFilter === "Paid" ? "default" : "ghost"}
+                onClick={() => setStatusFilter("Paid")}
+                className={`px-6 py-1 ${
+                  statusFilter === "Paid"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                Paid
+              </Button>
+            </div>
+          </div>
+          <div className="flex justify-end items-center mr-0">
+            {/*add order button*/}
             <Button
-              variant={statusFilter === "all" ? "default" : "ghost"}
-              onClick={() => setStatusFilter("all")}
-              className={`px-6 py-1 ${
-                statusFilter === "all"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700"
-              }`}
+              variant="primary"
+              onClick={() => setExpandedOrder}
+              className="bg-blue-600 ml-auto mr-4 flex hover:bg-blue-700 border shadow-md text-white "
             >
-              All
-            </Button>
-            <Button
-              variant={statusFilter === "Unpaid" ? "default" : "ghost"}
-              onClick={() => setStatusFilter("Unpaid")}
-              className={`px-6 py-1 ${
-                statusFilter === "Unpaid"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700"
-              }`}
-            >
-              Unpaid
-            </Button>
-            <Button
-              variant={statusFilter === "Paid" ? "default" : "ghost"}
-              onClick={() => setStatusFilter("Paid")}
-              className={`px-6 py-1 ${
-                statusFilter === "Paid"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700"
-              }`}
-            >
-              Paid
+              <Plus /> Add Order
             </Button>
           </div>
         </div>
@@ -650,6 +706,7 @@ const UnifiedAdminOrder = () => {
             calculateTax={calculateTax}
             TAX_RATE={TAX_RATE}
             printRef={printRef}
+            availableMenuItems={menuItems}
           />
         )}
       </main>

@@ -13,15 +13,13 @@ const { signupAdmin,
     deleteMenuItem,
     generateQRCode,
     getOrders,
-    getOrder,
-    updateOrderStatus,
+    getKitchenOrders,
+    updateOrderItemStatus,
     getAnalytics,
     activeOrders,
     allSessions,
     activeSessions,
-    allOrders,
     editOrder,
-    closeSession,
     deleteOrder,
     orderStatus,
     orderPay
@@ -54,6 +52,10 @@ router.patch('/order/:id', protect, editOrder);
 router.delete('/order/:id', protect, deleteOrder);
 router.put('/order/complete/:orderId', protect, orderStatus);
 router.put('/order/pay/:orderId', protect, orderPay);
+
+
+router.get('/orders/kitchen', protect, getKitchenOrders);
+router.put('/orders/:orderId/:itemId', protect, updateOrderItemStatus);
 
 
 // router.get('/orders', getOrders);

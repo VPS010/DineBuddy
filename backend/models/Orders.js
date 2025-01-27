@@ -47,11 +47,16 @@ const orderSchema = new mongoose.Schema({
       },
       status: {
         type: String,
-        enum: ['Pending', 'Completed'],
+        enum: ['Pending', 'In Progress', 'Completed'],
         default: 'Pending',
       },
     },
   ],
+  type: {
+    type: String,
+    enum: ['Dine-In', 'parcel'],
+    default: 'Dine-In',
+  },
   totalAmount: {
     type: Number,
     required: true, // Ensures totalAmount is always present

@@ -43,7 +43,7 @@ const DashboardPage = () => {
               !isSidebarOpen && "hidden"
             }`}
           >
-            SERVIT
+            FoodInk
           </h1>
           <button
             onClick={() => setSidebarOpen(!isSidebarOpen)}
@@ -95,7 +95,7 @@ const DashboardPage = () => {
                     isSidebarOpen && "hidden"
                   }`}
                 >
-                  SERVIT
+                  FoodInk
                 </h1>
               </div>
               <div className="bg-gray-600 h-full rounded-md mx-5 ml-9">

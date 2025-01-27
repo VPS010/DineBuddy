@@ -9,6 +9,7 @@ import AdminLogin from "./pages/Adminlogin";
 import AdminSignup from "./pages/AdminSignup";
 import DashboardPage from "./pages/DashboardPage";
 import OrdersPageDesign from "./DashboardComponents/Orders"
+import KitchenPage from "./pages/KitchenPage";
 
 // Import Components for Customers
 // import MenuPage from './pages/MenuPage';
@@ -38,7 +39,8 @@ const App = () => {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/signup" element={<AdminSignup />} />
         <Route path="/admin/dashboard" element={<DashboardPage />} />
-        <Route path="/admin/o" element={<OrdersPageDesign />} />
+        <Route path="/admin/kitchen" element={<KitchenPage />} />
+        
 
         {/* Customer Routes */}
         {/* <Route path="/user/menu/:restaurantId" element={<MenuPage />} /> */}

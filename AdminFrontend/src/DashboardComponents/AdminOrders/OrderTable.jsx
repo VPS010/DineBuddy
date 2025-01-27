@@ -85,7 +85,7 @@ const OrderTable = ({
                     </div>
                   </td>
                   <td className="hidden md:table-cell px-4 py-3 whitespace-nowrap text-sm">
-                    {order.tableNumber}
+                    T-{order.tableNumber}
                   </td>
                   <td className="hidden lg:table-cell px-4 py-3 whitespace-nowrap text-sm">
                     {order.customerName}

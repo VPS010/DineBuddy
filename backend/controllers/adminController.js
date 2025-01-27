@@ -558,8 +558,7 @@ const activeSessions = async (req, res) => {
     }
 };
 
-// Get all orders for a restaurant
-
+// Get all orders for a restaurant for Order Management
 const getOrders = async (req, res) => {
     try {
         // Extract filters from the query parameters
@@ -598,6 +597,115 @@ const getOrders = async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Server error',
+        });
+    }
+};
+
+
+// Get all orders for a restaurant for Kitchen Management
+const getKitchenOrders = async (req, res) => {
+    try {
+        // Query for active orders from the restaurant
+        const query = {
+            restaurantId: req.user.restaurantId,
+            status: 'Active'
+        };
+
+        // Fetch orders from the database
+        const orders = await Order.find(query)
+            .sort({ createdAt: -1 }); // Sort by most recent orders
+
+        res.status(200).json({
+            success: true,
+            count: orders.length,
+            data: orders,
+        });
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Server error',
+        });
+    }
+};
+
+//Kitchen Screen: Update order item status
+const updateOrderItemStatus = async (req, res) => {
+    try {
+        const { orderId, itemId } = req.params;
+        const { status } = req.body;
+        const restaurantId = req.user.restaurantId;
+
+        // Validate status
+        const validStatuses = ['Pending', 'In Progress', 'Completed'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status value'
+            });
+        }
+
+        // Find the order and verify restaurant ownership
+        const order = await Order.findOne({
+            _id: orderId,
+            restaurantId: restaurantId
+        });
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found or unauthorized access'
+            });
+        }
+
+        // Find the specific item
+        const itemIndex = order.items.findIndex(
+            item => item._id.toString() === itemId
+        );
+
+        if (itemIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'Item not found in order'
+            });
+        }
+
+        const currentStatus = order.items[itemIndex].status;
+        const newStatus = status;
+
+        // Define valid status transitions
+        const validTransitions = {
+            'Pending': ['In Progress', 'Completed'],
+            'In Progress': ['Completed'],
+            'Completed': []
+        };
+
+        // Check if the status transition is valid
+        if (!validTransitions[currentStatus].includes(newStatus) && currentStatus !== newStatus) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot change status from ${currentStatus} to ${newStatus}. Valid next statuses are: ${validTransitions[currentStatus].join(', ') || 'none'}`
+            });
+        }
+
+        // Update the item status
+        order.items[itemIndex].status = status;
+        order.updatedAt = new Date();
+
+        // Save the updated order
+        await order.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Item status updated successfully',
+            data: order.items[itemIndex]
+        });
+
+    } catch (error) {
+        console.error('Error updating order item status:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
         });
     }
 };
@@ -857,6 +965,7 @@ const orderStatus = async (req, res) => {
         });
     }
 };
+
 const orderPay = async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -918,5 +1027,6 @@ module.exports = {
     generateQRCode,
     allSessions, activeSessions,
     getOrders, editOrder, deleteOrder,
+    getKitchenOrders,updateOrderItemStatus,
     orderStatus, orderPay
 };

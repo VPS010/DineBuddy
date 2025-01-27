@@ -9,28 +9,7 @@ const SettingsPage = () => {
       title: "General Settings",
       content: (
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">Display Name</label>
-            <input
-              type="text"
-              className="w-full p-2 border rounded-md"
-              placeholder="Enter your display name"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">
-              Email Notifications
-            </label>
-            <select className="w-full p-2 border rounded-md">
-              <option>All notifications</option>
-              <option>Important only</option>
-              <option>None</option>
-            </select>
-          </div>
-          <div className="flex items-center space-x-2">
-            <input type="checkbox" id="darkMode" />
-            <label htmlFor="darkMode">Enable Dark Mode</label>
-          </div>
+          <p className="font-semibold text-2xl">UNDER DEVELOPMENT</p>
         </div>
       ),
     },
@@ -47,26 +26,7 @@ const SettingsPage = () => {
       title: "Security Settings",
       content: (
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">Change Password</label>
-            <input
-              type="password"
-              className="w-full p-2 border rounded-md"
-              placeholder="Enter new password"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">
-              Two-Factor Authentication
-            </label>
-            <div className="flex items-center space-x-2">
-              <input type="checkbox" id="2fa" />
-              <label htmlFor="2fa">Enable 2FA</label>
-            </div>
-          </div>
-          <button className="px-4 py-2 bg-red-600 text-white rounded-md">
-            Delete Account
-          </button>
+      <p className="font-semibold text-2xl">UNDER DEVELOPMENT</p>
         </div>
       ),
     },
