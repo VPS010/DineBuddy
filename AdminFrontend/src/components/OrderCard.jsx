@@ -169,7 +169,7 @@ const OrderCard = ({ order, onItemStatusUpdate, isParcel }) => {
                   {item.spiceLevel && (
                     <SpiceLevelIndicator level={item.spiceLevel} />
                   )}
-                  <span className="bg-white bg-opacity-50 px-2 py-1 rounded-full text-sm">
+                  <span className="bg-white text-gray-900 bg-opacity-50 px-2 py-1 rounded-full text-sm">
                     ×{item.quantity}
                   </span>
                   <ChevronDown

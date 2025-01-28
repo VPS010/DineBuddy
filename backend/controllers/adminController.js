@@ -275,6 +275,72 @@ const getRestaurant = async (req, res) => {
     }
 };
 
+const menuCategories = async (req, res) => {
+    const restaurantId = req.user.restaurantId; // Get restaurant ID from authenticated user
+    const { categories } = req.body; // Array of categories
+
+    if (!categories || !Array.isArray(categories) || categories.length === 0) {
+        return res.status(400).json({ error: "Invalid categories. Provide a non-empty array of category names." });
+    }
+
+    try {
+        // Find the restaurant by ID
+        const restaurant = await Restaurant.findById(restaurantId);
+
+        if (!restaurant) {
+            return res.status(404).json({ error: "Restaurant not found" });
+        }
+
+        // Filter out categories that are already present in the restaurant's menu
+        const newCategories = categories.filter(category => !restaurant.categories.includes(category));
+
+        // If there are any new categories, add them
+        if (newCategories.length > 0) {
+            restaurant.categories.push(...newCategories);
+            // Save the updated restaurant document
+            await restaurant.save();
+        }
+
+        res.status(200).json({
+            message: newCategories.length > 0 ? "Categories added successfully" : "No new categories to add",
+            categories: restaurant.categories,
+        });
+    } catch (error) {
+        console.error("Error adding categories:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+}
+
+
+
+
+// Route to get categories for a restaurant sorted alphabetically
+const getMenuCategories = async (req, res) => {
+    const restaurantId = req.user.restaurantId; // Get restaurant ID from authenticated user
+
+    try {
+        // Find the restaurant by ID
+        const restaurant = await Restaurant.findById(restaurantId);
+
+        if (!restaurant) {
+            return res.status(404).json({ error: "Restaurant not found" });
+        }
+
+        // Sort the categories alphabetically
+        const sortedCategories = restaurant.categories.sort((a, b) =>
+            a.localeCompare(b)
+        );
+
+        // Return the sorted categories
+        res.status(200).json({
+            categories: sortedCategories,
+        });
+    } catch (error) {
+        console.error("Error fetching categories:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+}
+
 
 
 // Utility function to upload image to ImgB
@@ -304,6 +370,7 @@ const uploadToImgBB = async (base64Image) => {
         throw new Error('Failed to upload image to ImgBB');
     }
 };
+
 
 
 const addMenuItem = async (req, res) => {
@@ -1023,10 +1090,10 @@ const orderPay = async (req, res) => {
 module.exports = {
     signupAdmin, loginAdmin, getAdminProfile, updateAdminProfile,
     getRestaurant, updateRestaurant,
-    addMenuItem, getMenu, getMenuItem, updateMenuItem, deleteMenuItem,
+    menuCategories, getMenuCategories, addMenuItem, getMenu, getMenuItem, updateMenuItem, deleteMenuItem,
     generateQRCode,
     allSessions, activeSessions,
     getOrders, editOrder, deleteOrder,
-    getKitchenOrders,updateOrderItemStatus,
+    getKitchenOrders, updateOrderItemStatus,
     orderStatus, orderPay
 };

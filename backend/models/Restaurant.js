@@ -12,15 +12,20 @@ const restaurantSchema = new mongoose.Schema({
     },
     address: {
         type: String,
-        required: false,  // No longer required; default value can be null
+        required: false, // No longer required; default value can be null
     },
     contact: {
         type: String,
-        required: false,  // No longer required; default value can be null
+        required: false, // No longer required; default value can be null
     },
     description: {
         type: String,
-        required: false,  // No longer required; default value can be null
+        required: false, // No longer required; default value can be null
+    },
+    tax: {
+        type: Number,
+        required: false, // No longer required; default value can be null
+        default: 0.12,
     },
     businessHours: {
         type: Map,
@@ -37,15 +42,22 @@ const restaurantSchema = new mongoose.Schema({
     },
     memberSince: {
         type: Date,
-        default: Date.now,  // Automatically set to the current date when a new restaurant is created
+        default: Date.now, // Automatically set to the current date when a new restaurant is created
     },
-    // Geo-fence field (optional):
     geoFence: {
         coordinates: {
-            type: [[Number]],  // Array of two corner coordinates: [lat1, lng1], [lat2, lng2]
-            required: false,    // Not required during restaurant creation
+            type: [[Number]], // Array of two corner coordinates: [lat1, lng1], [lat2, lng2]
+            required: false, // Not required during restaurant creation
         },
     },
+    categories: [
+        {
+
+            type: String,
+            required: true, // Category name is required
+
+        },
+    ],
 });
 
 const Restaurant = mongoose.model('Restaurant', restaurantSchema);

@@ -6,6 +6,7 @@ const { signupAdmin,
     updateAdminProfile,
     getRestaurant,
     updateRestaurant,
+    menuCategories,
     addMenuItem,
     getMenu,
     getMenuItem,
@@ -15,6 +16,7 @@ const { signupAdmin,
     getOrders,
     getKitchenOrders,
     updateOrderItemStatus,
+    getMenuCategories,
     getAnalytics,
     activeOrders,
     allSessions,
@@ -22,7 +24,7 @@ const { signupAdmin,
     editOrder,
     deleteOrder,
     orderStatus,
-    orderPay
+    orderPay,
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -37,7 +39,8 @@ router.put('/profile', protect, updateAdminProfile);
 router.put('/restaurant', protect, updateRestaurant);      // Update restaurant info
 router.get('/restaurant', protect, getRestaurant);         // Get restaurant info
 
-
+router.post('/menu/categories',protect, menuCategories);
+router.get('/menu/categories', protect, getMenuCategories);
 router.post('/menu', protect, addMenuItem);
 router.get('/menu', protect, getMenu);
 router.get('/menu/:id', protect, getMenuItem);

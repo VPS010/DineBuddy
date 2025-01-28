@@ -23,8 +23,10 @@ const OrderDetails = ({
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [localHasChanges, setLocalHasChanges] = useState(hasChanges);
   const searchInputRef = useRef(null);
   const orderDetailsRef = useRef(null);
+  const printDivRef = useRef(null);
   const isPaid = expandedOrder?.paymentStatus === "Paid";
 
   // Filter menu items based on search term
@@ -50,12 +52,24 @@ const OrderDetails = ({
       ...expandedOrder,
       items: updatedItems,
     });
+    setLocalHasChanges(true);
+  };
+
+  // Handle item name change
+  const handleItemNameChange = (itemId, newName) => {
+    const updatedItems = expandedOrder.items.map((i) =>
+      i.id === itemId ? { ...i, name: newName } : i
+    );
+    setExpandedOrder({
+      ...expandedOrder,
+      items: updatedItems,
+    });
+    setLocalHasChanges(true);
   };
 
   // Keyboard shortcut for search focus
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl + K shortcut for search
       if (e.ctrlKey && e.key === "k") {
         e.preventDefault();
         searchInputRef.current?.focus();
@@ -70,6 +84,7 @@ const OrderDetails = ({
     try {
       setIsSaving(true);
       await onSaveChanges(expandedOrder);
+      setLocalHasChanges(false);
     } catch (error) {
       console.error("Error saving changes:", error);
     } finally {
@@ -89,17 +104,217 @@ const OrderDetails = ({
   const tax = calculateTax(subtotal);
   const total = subtotal + tax;
 
+  const handlePrintBill = () => {
+    const printContent = document.createElement("iframe");
+    printContent.style.display = "none";
+    document.body.appendChild(printContent);
+
+    printContent.contentDocument.write(`
+      <html>
+        <head>
+          <title>Order #${expandedOrder.id} - ${restaurantInfo.name}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 20px;
+              max-width: 800px;
+              margin: 0 auto;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 20px 0;
+            }
+            th, td {
+              padding: 8px;
+              text-align: left;
+              border-bottom: 1px solid #ddd;
+            }
+            th {
+              border-top: 2px solid #000;
+              border-bottom: 2px solid #000;
+            }
+            .text-right {
+              text-align: right;
+            }
+            .text-center {
+              text-align: center;
+            }
+            .totals {
+              margin-top: 20px;
+              text-align: right;
+            }
+            .thank-you {
+              margin-top: 40px;
+              text-align: center;
+              border-top: 1px solid #ddd;
+              padding-top: 20px;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .order-info {
+              margin-bottom: 20px;
+            }
+            .bold {
+              font-weight: bold;
+            }
+            @media print {
+              body {
+                padding: 0;
+                font-size: 12px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${restaurantInfo.name}</h1>
+            <p>${restaurantInfo.address}</p>
+            <p>${restaurantInfo.phone}</p>
+          </div>
+          
+          <div class="order-info">
+            <p><span class="bold">Order #:</span> ${expandedOrder.id}</p>
+            <p><span class="bold">Table:</span> ${expandedOrder.tableNumber}</p>
+            <p><span class="bold">Customer:</span> ${
+              expandedOrder.customerName || "N/A"
+            }</p>
+            <p><span class="bold">Date:</span> ${new Date(
+              expandedOrder.createdAt
+            ).toLocaleString()}</p>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Spice Level</th>
+                <th class="text-right">Qty</th>
+                <th class="text-right">Price</th>
+                <th class="text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${expandedOrder.items
+                .map(
+                  (item) => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.spiceLevel}</td>
+                  <td class="text-right">${item.quantity}</td>
+                  <td class="text-right">₹${item.price.toFixed(2)}</td>
+                  <td class="text-right">₹${(
+                    item.price * item.quantity
+                  ).toFixed(2)}</td>
+                </tr>
+              `
+                )
+                .join("")}
+            </tbody>
+          </table>
+          
+          <div class="totals">
+            <p>Subtotal: ₹${subtotal.toFixed(2)}</p>
+            <p>Tax (${(TAX_RATE * 100).toFixed(0)}%): ₹${tax.toFixed(2)}</p>
+            <p class="bold">Total: ₹${total.toFixed(2)}</p>
+          </div>
+          
+          <div class="thank-you">
+            <p>Thank you for dining with us!</p>
+            <p>Please visit again</p>
+          </div>
+        </body>
+      </html>
+    `);
+
+    printContent.contentDocument.close();
+
+    // Wait for styles to load before printing
+    setTimeout(() => {
+      printContent.contentWindow.focus();
+      printContent.contentWindow.print();
+
+      // Remove the iframe after printing
+      printContent.contentWindow.onafterprint = function () {
+        document.body.removeChild(printContent);
+      };
+    }, 250);
+  };
+
+  // Print-specific content
+  const PrintContent = () => (
+    <div className="p-8 w-full bg-white">
+      {/* Restaurant Info */}
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold">{restaurantInfo.name}</h2>
+        <p className="text-gray-600">{restaurantInfo.address}</p>
+        <p className="text-gray-600">{restaurantInfo.phone}</p>
+      </div>
+
+      {/* Order Info */}
+      <div className="mb-6 space-y-3">
+        <h3 className="text-lg font-semibold">Order #{expandedOrder.id}</h3>
+        <p>Table: {expandedOrder.tableNumber}</p>
+        <p>Customer: {expandedOrder.customerName || "N/A"}</p>
+        <p>Date: {new Date(expandedOrder.createdAt).toLocaleString()}</p>
+      </div>
+
+      {/* Items Table */}
+      <table className="w-full mb-6">
+        <thead>
+          <tr className="border-b-2 border-gray-300">
+            <th className="px-4 py-2 text-left">Item</th>
+            <th className="px-4 py-2 text-left">Spice Level</th>
+            <th className="px-4 py-2 text-right">Quantity</th>
+            <th className="px-4 py-2 text-right">Price</th>
+            <th className="px-4 py-2 text-right">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {expandedOrder.items.map((item) => (
+            <tr key={item.id} className="border-b">
+              <td className="px-4 py-2">{item.name}</td>
+              <td className="px-4 py-2">{item.spiceLevel}</td>
+              <td className="px-4 py-2 text-right">{item.quantity}</td>
+              <td className="px-4 py-2 text-right">₹{item.price.toFixed(2)}</td>
+              <td className="px-4 py-2 text-right">
+                ₹{(item.price * item.quantity).toFixed(2)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Totals */}
+      <div className="flex flex-col items-end space-y-2 mb-8">
+        <p className="text-lg">Subtotal: ₹{subtotal.toFixed(2)}</p>
+        <p className="text-lg">
+          Tax ({(TAX_RATE * 100).toFixed(0)}%): ₹{tax.toFixed(2)}
+        </p>
+        <p className="text-xl font-bold">Total: ₹{total.toFixed(2)}</p>
+      </div>
+
+      {/* Thank You Message */}
+      <div className="text-center mt-8 pt-4 border-t">
+        <p>Thank you for dining with us!</p>
+        <p className="text-sm text-gray-600">Please visit again</p>
+      </div>
+    </div>
+  );
+
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
       onClick={handleModalClick}
     >
+      {/* Normal View */}
       <div
         className="bg-white p-8 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex"
-        ref={printRef}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* New Menu Search Section */}
+        {/* Menu Search Section */}
         {!isPaid && (
           <div className="w-1/3 pr-4 border-r flex flex-col">
             <div className="relative mb-4">
@@ -133,20 +348,21 @@ const OrderDetails = ({
           </div>
         )}
 
-        {/* Existing Order Details Section */}
-        <div 
+        {/* Order Details Section */}
+        <div
           ref={orderDetailsRef}
-          className={`${!isPaid ? "w-2/3 pl-4" : "w-full"} flex flex-col overflow-hidden`}
+          className={`${
+            !isPaid ? "w-2/3 pl-4" : "w-full"
+          } flex flex-col overflow-hidden`}
         >
           <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
-            {/* Restaurant Info */}
+            {/* Regular content as before */}
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold">{restaurantInfo.name}</h2>
               <p className="text-gray-600">{restaurantInfo.address}</p>
               <p className="text-gray-600">{restaurantInfo.phone}</p>
             </div>
 
-            {/* Order Info */}
             <div className="mb-6 space-y-3">
               <h3 className="text-lg font-semibold">
                 Order #{expandedOrder.id}
@@ -160,9 +376,13 @@ const OrderDetails = ({
                   <input
                     type="text"
                     value={expandedOrder.customerName || ""}
-                    onChange={(e) =>
-                      handleCustomerNameChange(expandedOrder.id, e.target.value)
-                    }
+                    onChange={(e) => {
+                      handleCustomerNameChange(
+                        expandedOrder.id,
+                        e.target.value
+                      );
+                      setLocalHasChanges(true);
+                    }}
                     className="px-2 py-1 border rounded"
                     placeholder="Customer name"
                     disabled={isSaving}
@@ -172,7 +392,6 @@ const OrderDetails = ({
               <p>Date: {new Date(expandedOrder.createdAt).toLocaleString()}</p>
             </div>
 
-            {/* Items Table */}
             <div className="overflow-x-auto">
               <table className="w-full mb-6">
                 <thead>
@@ -195,18 +414,9 @@ const OrderDetails = ({
                           <input
                             type="text"
                             value={item.name}
-                            onChange={(e) => {
-                              const updatedItems = expandedOrder.items.map(
-                                (i) =>
-                                  i.id === item.id
-                                    ? { ...i, name: e.target.value }
-                                    : i
-                              );
-                              setExpandedOrder({
-                                ...expandedOrder,
-                                items: updatedItems,
-                              });
-                            }}
+                            onChange={(e) =>
+                              handleItemNameChange(item.id, e.target.value)
+                            }
                             className="w-full px-2 py-1 border rounded"
                             placeholder="Item name"
                             disabled={isSaving}
@@ -219,9 +429,10 @@ const OrderDetails = ({
                         ) : (
                           <SpiceLevelDropdown
                             value={item.spiceLevel}
-                            onChange={(level) =>
-                              handleSpiceLevelChange(item.id, level)
-                            }
+                            onChange={(level) => {
+                              handleSpiceLevelChange(item.id, level);
+                              setLocalHasChanges(true);
+                            }}
                             disabled={isSaving}
                           />
                         )}
@@ -234,9 +445,10 @@ const OrderDetails = ({
                             type="number"
                             min="1"
                             value={item.quantity}
-                            onChange={(e) =>
-                              handleQuantityChange(item.id, e.target.value)
-                            }
+                            onChange={(e) => {
+                              handleQuantityChange(item.id, e.target.value);
+                              setLocalHasChanges(true);
+                            }}
                             className="w-20 px-2 py-1 border rounded"
                             disabled={isSaving}
                           />
@@ -249,7 +461,10 @@ const OrderDetails = ({
                       {!isPaid && (
                         <td className="px-4 py-2">
                           <button
-                            onClick={() => handleDeleteItem(item.id)}
+                            onClick={() => {
+                              handleDeleteItem(item.id);
+                              setLocalHasChanges(true);
+                            }}
                             className="text-red-600 hover:text-red-800 disabled:opacity-50"
                             disabled={isSaving}
                           >
@@ -263,12 +478,14 @@ const OrderDetails = ({
               </table>
             </div>
 
-            {/* Add Item Button */}
             {!isPaid && (
               <div className="mb-6">
                 <Button
                   variant="ghost"
-                  onClick={handleAddItem}
+                  onClick={() => {
+                    handleAddItem();
+                    setLocalHasChanges(true);
+                  }}
                   disabled={isSaving}
                   className="flex items-center"
                 >
@@ -277,7 +494,6 @@ const OrderDetails = ({
               </div>
             )}
 
-            {/* Totals */}
             <div className="flex flex-col items-end space-y-2 mb-8">
               <p className="text-lg">Subtotal: ₹{subtotal.toFixed(2)}</p>
               <p className="text-lg">
@@ -296,7 +512,7 @@ const OrderDetails = ({
             >
               Close
             </Button>
-            {!isPaid && hasChanges && (
+            {!isPaid && localHasChanges && (
               <Button
                 variant="success"
                 onClick={handleSaveChanges}
@@ -307,7 +523,7 @@ const OrderDetails = ({
             )}
             <Button
               variant="primary"
-              onClick={handlePrint}
+              onClick={handlePrintBill}
               disabled={isSaving}
               className="flex items-center"
             >

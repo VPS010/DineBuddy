@@ -292,23 +292,6 @@ const Cart = ({
     locationVerification.startVerification();
   };
 
-  const calculateCartTotal = (items) => {
-    return items.reduce((total, item) => {
-      const price = parseFloat(item.price);
-      const quantity = parseInt(item.quantity);
-
-      if (isNaN(price) || isNaN(quantity)) {
-        console.warn(`Invalid price or quantity for item: ${item.name}`);
-        return total;
-      }
-
-      return total + price * quantity;
-    }, 0);
-  };
-
-  const subtotal = calculateCartTotal(cart);
-  const tax = Number((subtotal * 0.1).toFixed(2));
-  const total = Number((subtotal + tax).toFixed(2));
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -349,6 +332,7 @@ const Cart = ({
       <div className="flex flex-col h-full">
         <div className="sticky top-0 p-4 border-b border-[#E8E1D3] flex justify-between items-center bg-[#F9F6F0]">
           <h2 className="text-[#2D3436] font-semibold text-lg">Your Cart</h2>
+          <h2 className="text-[#2D3436] font-semibold text-lg">Table-{tableNumber}</h2>
           <button
             onClick={() => setIsCartOpen(false)}
             className="p-2 text-[#2D3436] hover:bg-[#E8E1D3] rounded-full transition-colors"
@@ -398,9 +382,6 @@ const Cart = ({
 
         <div className="sticky bottom-0 bg-white border-t border-[#E8E1D3]">
           <CartSummary
-            subtotal={subtotal}
-            tax={tax}
-            total={total}
             onPlaceOrder={handlePlaceOrder}
             isLoading={isLoading}
           />

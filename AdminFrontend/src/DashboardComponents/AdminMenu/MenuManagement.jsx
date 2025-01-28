@@ -6,6 +6,7 @@ import MenuItemModal from "./ItemModal";
 
 const MenuManagement = () => {
   const [menuItems, setMenuItems] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
@@ -24,7 +25,7 @@ const MenuManagement = () => {
 
   const initialFormData = {
     name: "",
-    category: "Mains",
+    category: "", // Will be set to first category once loaded
     price: "",
     description: "",
     dietary: [],
@@ -36,6 +37,29 @@ const MenuManagement = () => {
   };
 
   const [formData, setFormData] = useState(initialFormData);
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get("/api/v1/admin/menu/categories");
+        setCategories(response.data.categories);
+        // Update initial form data with first category
+        if (response.data.categories.length > 0) {
+          setFormData((prev) => ({
+            ...prev,
+            category: response.data.categories[0],
+          }));
+        }
+        setError(null);
+      } catch (err) {
+        setError("Failed to fetch categories");
+        console.error("Error fetching categories:", err);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   // Fetch menu items
   useEffect(() => {
@@ -172,10 +196,6 @@ const MenuManagement = () => {
     }
   };
 
-
-
-
-  
   const handleEdit = (item) => {
     setSelectedItem(item);
     setFormData(item);
@@ -304,6 +324,7 @@ const MenuManagement = () => {
           selectedItem={selectedItem}
           previewImage={previewImage}
           loading={loading}
+          categories={categories} // Pass categories to modal
         />
       </div>
     </div>

@@ -10,9 +10,9 @@ const MenuItemModal = ({
   onSubmit,
   selectedItem,
   previewImage,
-  loading
+  loading,
+  categories // Add categories prop
 }) => {
-  const categories = ['Appetizers', 'Mains', 'Desserts', 'Beverages', 'Sides'];
   const spiceLevels = ['Mild', 'Medium', 'Spicy', 'Extra Spicy'];
   const dietaryOptions = ['Gluten-Free', 'Dairy-Free', 'Nut-Free', 'Vegan'];
   const popularityTags = ['Best Seller', 'Customer Favorite', 'Trending Now', 'New Arrival'];
@@ -97,6 +97,7 @@ const MenuItemModal = ({
                   value={formData.category}
                   onChange={onInputChange}
                   className="w-full p-2 border rounded-lg"
+                  required
                 >
                   {categories.map(category => (
                     <option key={category} value={category}>{category}</option>
