@@ -23,7 +23,6 @@ const UnifiedAdminOrder = () => {
 
   const printRef = useRef();
   const pollingIntervalRef = useRef(null);
-  const TAX_RATE = 0.18;
 
   // Helper function to check if a date falls within the selected time range
   const isDateInRange = (date) => {
@@ -36,6 +35,14 @@ const UnifiedAdminOrder = () => {
       const endOfDay = new Date(now);
       endOfDay.setHours(23, 59, 59, 999);
       return orderDate >= startOfDay && orderDate <= endOfDay;
+    } else if (timeFilter === "yesterday") {
+      const startOfYesterday = new Date(now);
+      startOfYesterday.setDate(now.getDate() - 1);
+      startOfYesterday.setHours(0, 0, 0, 0);
+      const endOfYesterday = new Date(now);
+      endOfYesterday.setDate(now.getDate() - 1);
+      endOfYesterday.setHours(23, 59, 59, 999);
+      return orderDate >= startOfYesterday && orderDate <= endOfYesterday;
     } else if (timeFilter === "week") {
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - now.getDay());
@@ -49,7 +56,6 @@ const UnifiedAdminOrder = () => {
     }
     return true; // For "all" time filter
   };
-
   useEffect(() => {
     const fetchMenuItems = async () => {
       setLoading(true);
@@ -90,6 +96,7 @@ const UnifiedAdminOrder = () => {
       const { restaurant } = response.data;
       setRestaurantInfo({
         name: restaurant.name,
+        tax: restaurant.tax,
         address: restaurant.address,
         phone: restaurant.contact,
         email: restaurant.description,
@@ -100,6 +107,11 @@ const UnifiedAdminOrder = () => {
       console.error("Error fetching restaurant details:", error);
       setError("Failed to load restaurant details");
     }
+  };
+
+  // Helper function to get current tax rate
+  const getCurrentTaxRate = () => {
+    return restaurantInfo?.tax ? parseFloat(restaurantInfo.tax) : 0;
   };
 
   // Fetch orders
@@ -204,10 +216,11 @@ const UnifiedAdminOrder = () => {
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   };
 
+  // Modify calculateTax function to use the tax rate from restaurantInfo
   const calculateTax = (subtotal) => {
-    return subtotal * TAX_RATE;
+    const taxRate = getCurrentTaxRate();
+    return subtotal * taxRate;
   };
-
   const handleCustomerNameChange = async (orderId, newName) => {
     try {
       // Get current order items
@@ -576,14 +589,18 @@ const UnifiedAdminOrder = () => {
   const filteredOrders = getFilteredOrders().filter((order) => {
     // If there's no search term, return all orders
     if (!searchTerm) return true;
-    
+
     const searchLower = searchTerm.toLowerCase();
-    
+
     // Safely check each field with null coalescing
     return (
-      (order?.id?.toString() || '').toLowerCase().includes(searchLower) ||
-      (order?.tableNumber?.toString() || '').toLowerCase().includes(searchLower) ||
-      (order?.customerName?.toString() || '').toLowerCase().includes(searchLower)
+      (order?.id?.toString() || "").toLowerCase().includes(searchLower) ||
+      (order?.tableNumber?.toString() || "")
+        .toLowerCase()
+        .includes(searchLower) ||
+      (order?.customerName?.toString() || "")
+        .toLowerCase()
+        .includes(searchLower)
     );
   });
 
@@ -611,10 +628,10 @@ const UnifiedAdminOrder = () => {
 
       <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <OrderStats
-          orders={dateFilteredOrders} // Use date filtered orders for stats
+          orders={dateFilteredOrders}
           showRevenue={showRevenue}
           setShowRevenue={setShowRevenue}
-          TAX_RATE={TAX_RATE}
+          TAX_RATE={getCurrentTaxRate()} // Pass the tax rate function
         />
 
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -635,6 +652,7 @@ const UnifiedAdminOrder = () => {
               onChange={(e) => setTimeFilter(e.target.value)}
             >
               <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
               <option value="week">This Week</option>
               <option value="month">This Month</option>
               <option value="all">All Orders</option>
@@ -723,7 +741,7 @@ const UnifiedAdminOrder = () => {
             restaurantInfo={restaurantInfo}
             calculateSubtotal={calculateSubtotal}
             calculateTax={calculateTax}
-            TAX_RATE={TAX_RATE}
+            TAX_RATE={getCurrentTaxRate()} // Pass the tax rate function
             printRef={printRef}
             availableMenuItems={menuItems}
           />
@@ -734,7 +752,7 @@ const UnifiedAdminOrder = () => {
             onCreateOrder={handleOrderCreated}
             restaurantInfo={restaurantInfo}
             availableMenuItems={menuItems}
-            TAX_RATE={TAX_RATE}
+            TAX_RATE={getCurrentTaxRate()}
           />
         )}
       </main>

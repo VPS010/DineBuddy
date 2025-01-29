@@ -1,6 +1,5 @@
-// CreateOrder.js
-import React, { useState, useMemo, useRef, useEffect } from "react";
-import { X, Plus, Printer, Search } from "lucide-react";
+import React, { useState, useMemo, useRef } from "react";
+import { X, Plus, Search } from "lucide-react";
 import axios from "axios";
 
 const CreateOrder = ({
@@ -8,7 +7,7 @@ const CreateOrder = ({
   onCreateOrder,
   restaurantInfo,
   availableMenuItems,
-  TAX_RATE = 0.05,
+  TAX_RATE,
 }) => {
   const [orderType, setOrderType] = useState("Dine-In");
   const [tableNumber, setTableNumber] = useState("");
@@ -26,10 +25,16 @@ const CreateOrder = ({
     );
   }, [availableMenuItems, searchTerm]);
 
+  // Generate a unique ID for new items
+  const generateUniqueId = () => {
+    return `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  };
+
   // Handle adding an item from the menu list
   const handleMenuItemAdd = (menuItem) => {
     const newItem = {
-      itemId: menuItem._id, // Using the actual menu item ID
+      id: generateUniqueId(), // Generate a unique temporary ID
+      itemId: menuItem._id,   // Keep the original menu item ID
       name: menuItem.name,
       price: menuItem.price,
       quantity: 1,
@@ -64,11 +69,11 @@ const CreateOrder = ({
       const response = await axios.post(
         "http://localhost:3000/api/v1/admin/orders",
         {
-          type: orderType, // This will now be "Dine-In" instead of "Dine-in"
+          type: orderType,
           tableNumber: orderType === "Dine-In" ? tableNumber : null,
           customerName: customerName || "Valued Customer",
           items: items.map((item) => ({
-            itemId: item.itemId,
+            itemId: item.itemId, // Use the original menu item ID
             quantity: item.quantity,
             spiceLevel: item.spiceLevel,
           })),
@@ -92,12 +97,12 @@ const CreateOrder = ({
     }
   };
 
-  // Handle item deletion
+  // Handle item deletion - Fixed to use correct ID
   const handleDeleteItem = (itemId) => {
     setItems(items.filter((item) => item.id !== itemId));
   };
 
-  // Handle quantity change
+  // Handle quantity change - Fixed to use correct ID
   const handleQuantityChange = (itemId, newQuantity) => {
     setItems(
       items.map((item) =>
@@ -108,7 +113,7 @@ const CreateOrder = ({
     );
   };
 
-  // Handle spice level change
+  // Handle spice level change - Fixed to use correct ID
   const handleSpiceLevelChange = (itemId, newLevel) => {
     setItems(
       items.map((item) =>
@@ -117,7 +122,7 @@ const CreateOrder = ({
     );
   };
 
-  // Handle click outside to close
+
   const handleModalClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -258,8 +263,7 @@ const CreateOrder = ({
                         >
                           <option value="Mild">Mild</option>
                           <option value="Medium">Medium</option>
-                          <option value="Hot">Hot</option>
-                          <option value="Extra Hot">Extra Hot</option>
+                          <option value="Spicy">Spicy</option>
                         </select>
                       </td>
                       <td className="px-4 py-2">

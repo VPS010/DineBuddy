@@ -178,7 +178,7 @@ const updateAdminProfile = async (req, res) => {
 
 const updateRestaurant = async (req, res) => {
     try {
-        const { name, address, contact, description, businessHours, geoFence } = req.body;
+        const { name, address, contact, description, businessHours,tax, geoFence } = req.body;
 
         console.log('Received geoFence data:', geoFence);
 
@@ -193,6 +193,7 @@ const updateRestaurant = async (req, res) => {
         if (address) restaurant.address = address;
         if (contact) restaurant.contact = contact;
         if (description) restaurant.description = description;
+        if(tax) restaurant.tax = tax;
 
         // Update business hours if provided
         if (businessHours) {
@@ -231,6 +232,7 @@ const updateRestaurant = async (req, res) => {
             restaurant: {
                 id: restaurant._id,
                 name: restaurant.name,
+                tax: restaurant.tax,
                 address: restaurant.address,
                 contact: restaurant.contact,
                 description: restaurant.description,
@@ -260,6 +262,7 @@ const getRestaurant = async (req, res) => {
             message: 'Restaurant details retrieved successfully.',
             restaurant: {
                 id: restaurant._id,
+                tax: restaurant.tax,
                 name: restaurant.name,
                 address: restaurant.address,
                 contact: restaurant.contact,
@@ -755,17 +758,12 @@ const createAdminOrder = async (req, res) => {
 const getOrders = async (req, res) => {
     try {
         // Extract filters from the query parameters
-        const { paymentStatus, startDate, endDate } = req.query;
+        const { startDate, endDate } = req.query;
 
         // Initialize the query object
         const query = {
             restaurantId: req.user.restaurantId,
         };
-
-        // Apply payment status filter if provided
-        if (paymentStatus) {
-            query.paymentStatus = paymentStatus;
-        }
 
         // Apply date range filter if provided
         if (startDate) {
