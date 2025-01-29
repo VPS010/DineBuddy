@@ -27,7 +27,7 @@ const LandingPage = () => {
             {/* Text content */}
             <div className="max-w-3xl flex flex-col justify-center">
               <h1 className="text-7xl font-mono text-center flex flex-col sm:text-left font-extrabold text-stone-800 md:text-6xl">
-                SERVIT
+                DineBuddy
               </h1>
               <h1 className="flex flex-col text-center text-5xl text-maroon sm:text-left md:text-6xl font-serif font-medium mb-6 ">
               Your Personal Digital Waiter

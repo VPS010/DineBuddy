@@ -39,7 +39,7 @@ const QRCard = ({ tableNumber, qrCode, restaurant, cleanQRCodeData }) => {
 
         <div className="text-center mt-6 pt-4 border-t border-stone-200 w-full">
           <h3 className="text-2xl font-bold text-amber-600 mb-1">
-            SERVIT
+            DineBuddy
           </h3>
           <p className="text-stone-600 text-sm font-serif italic">
             Your Personal Digital Waiter

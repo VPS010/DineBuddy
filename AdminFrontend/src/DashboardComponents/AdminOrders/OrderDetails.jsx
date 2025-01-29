@@ -12,13 +12,11 @@ const OrderDetails = ({
   handleDeleteItem,
   handleAddItem,
   handleSaveChanges: onSaveChanges,
-  handlePrint,
   hasChanges,
   restaurantInfo,
   calculateSubtotal,
   calculateTax,
   TAX_RATE,
-  printRef,
   availableMenuItems,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
@@ -243,67 +241,6 @@ const OrderDetails = ({
     }, 250);
   };
 
-  // Print-specific content
-  const PrintContent = () => (
-    <div className="p-8 w-full bg-white">
-      {/* Restaurant Info */}
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold">{restaurantInfo.name}</h2>
-        <p className="text-gray-600">{restaurantInfo.address}</p>
-        <p className="text-gray-600">{restaurantInfo.phone}</p>
-      </div>
-
-      {/* Order Info */}
-      <div className="mb-6 space-y-3">
-        <h3 className="text-lg font-semibold">Order #{expandedOrder.id}</h3>
-        <p>Table: {expandedOrder.tableNumber}</p>
-        <p>Customer: {expandedOrder.customerName || "N/A"}</p>
-        <p>Date: {new Date(expandedOrder.createdAt).toLocaleString()}</p>
-      </div>
-
-      {/* Items Table */}
-      <table className="w-full mb-6">
-        <thead>
-          <tr className="border-b-2 border-gray-300">
-            <th className="px-4 py-2 text-left">Item</th>
-            <th className="px-4 py-2 text-left">Spice Level</th>
-            <th className="px-4 py-2 text-right">Quantity</th>
-            <th className="px-4 py-2 text-right">Price</th>
-            <th className="px-4 py-2 text-right">Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>
-          {expandedOrder.items.map((item) => (
-            <tr key={item.id} className="border-b">
-              <td className="px-4 py-2">{item.name}</td>
-              <td className="px-4 py-2">{item.spiceLevel}</td>
-              <td className="px-4 py-2 text-right">{item.quantity}</td>
-              <td className="px-4 py-2 text-right">₹{item.price.toFixed(2)}</td>
-              <td className="px-4 py-2 text-right">
-                ₹{(item.price * item.quantity).toFixed(2)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Totals */}
-      <div className="flex flex-col items-end space-y-2 mb-8">
-        <p className="text-lg">Subtotal: ₹{subtotal.toFixed(2)}</p>
-        <p className="text-lg">
-          Tax ({(TAX_RATE * 100).toFixed(0)}%): ₹{tax.toFixed(2)}
-        </p>
-        <p className="text-xl font-bold">Total: ₹{total.toFixed(2)}</p>
-      </div>
-
-      {/* Thank You Message */}
-      <div className="text-center mt-8 pt-4 border-t">
-        <p>Thank you for dining with us!</p>
-        <p className="text-sm text-gray-600">Please visit again</p>
-      </div>
-    </div>
-  );
-
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
@@ -367,7 +304,12 @@ const OrderDetails = ({
               <h3 className="text-lg font-semibold">
                 Order #{expandedOrder.id}
               </h3>
-              <p>Table: {expandedOrder.tableNumber}</p>
+              <p>
+                {" "}
+                {expandedOrder.type == "Parcel"
+                  ? "Parcel"
+                  : `Table: ${expandedOrder.tableNumber}`}
+              </p>
               <div className="flex items-center space-x-2">
                 <span>Customer:</span>
                 {isPaid ? (

@@ -13,10 +13,12 @@ const { signupAdmin,
     updateMenuItem,
     deleteMenuItem,
     generateQRCode,
+    createAdminOrder,
     getOrders,
     getKitchenOrders,
     updateOrderItemStatus,
     getMenuCategories,
+    deleteCategory,
     getAnalytics,
     activeOrders,
     allSessions,
@@ -34,6 +36,7 @@ router.post('/signin', loginAdmin);
 router.get('/profile', protect, getAdminProfile);
 router.put('/profile', protect, updateAdminProfile);
 
+router.post('/qr/generate', protect, generateQRCode);
 
 // Restaurant Routes
 router.put('/restaurant', protect, updateRestaurant);      // Update restaurant info
@@ -41,6 +44,9 @@ router.get('/restaurant', protect, getRestaurant);         // Get restaurant inf
 
 router.post('/menu/categories',protect, menuCategories);
 router.get('/menu/categories', protect, getMenuCategories);
+router.delete('/menu/categories/:category', protect, deleteCategory);
+
+
 router.post('/menu', protect, addMenuItem);
 router.get('/menu', protect, getMenu);
 router.get('/menu/:id', protect, getMenuItem);
@@ -48,9 +54,9 @@ router.put('/menu/:id', protect, updateMenuItem);
 router.delete('/menu/:id', protect, deleteMenuItem);
 
 
-router.post('/qr/generate', protect, generateQRCode);
 
 router.get('/orders', protect, getOrders);
+router.post('/orders', protect, createAdminOrder);
 router.patch('/order/:id', protect, editOrder);
 router.delete('/order/:id', protect, deleteOrder);
 router.put('/order/complete/:orderId', protect, orderStatus);

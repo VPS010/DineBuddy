@@ -144,7 +144,7 @@ const OrderCard = ({ order, onItemStatusUpdate, isParcel }) => {
             <span className="text-lg font-bold">Table {order.tableNumber}</span>
           )}
           <span className="text-gray-800 text-sm">
-            ID:#{order._id.slice(0, 4)}
+            ID:#{order._id.slice(0, 8)}
           </span>
         </div>
         <span className="text-sm text-gray-700">

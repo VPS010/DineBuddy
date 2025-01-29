@@ -3,6 +3,7 @@ import axios from "axios";
 import MenuHeader from "./Header";
 import MenuItemCard from "./ItemCard";
 import MenuItemModal from "./ItemModal";
+import CategoryDialog from "./CategoryDialog";
 
 const MenuManagement = () => {
   const [menuItems, setMenuItems] = useState([]);
@@ -13,6 +14,7 @@ const MenuManagement = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [error, setError] = useState(null);
 
   const token = localStorage.getItem("authorization");
@@ -238,6 +240,30 @@ const MenuManagement = () => {
     }
   };
 
+  const handleAddCategory = async (newCategory) => {
+    try {
+      const response = await api.post("/api/v1/admin/menu/categories", {
+        categories: [newCategory],
+      });
+      setCategories(response.data.categories);
+    } catch (err) {
+      throw new Error(err.response?.data?.error || "Failed to add category");
+    }
+  };
+
+  const handleDeleteCategory = async (category) => {
+    try {
+      const response = await api.delete(
+        `/api/v1/admin/menu/categories/${encodeURIComponent(category)}`
+      );
+      setCategories(response.data.categories);
+    } catch (err) {
+      // Properly extract the error message from the response
+      const errorMessage = err.response?.data?.error || "Failed to delete category";
+      throw new Error(errorMessage);
+    }
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedItem(null);
@@ -286,6 +312,7 @@ const MenuManagement = () => {
           onAddNew={() => setIsModalOpen(true)}
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
+          onAddNewCategory={() => setIsCategoryModalOpen(true)}
         />
 
         {loading && (
@@ -313,6 +340,14 @@ const MenuManagement = () => {
                 </div>
               )}
         </div>
+
+        <CategoryDialog
+          isOpen={isCategoryModalOpen}
+          onClose={() => setIsCategoryModalOpen(false)}
+          categories={categories}
+          onAddCategory={handleAddCategory}
+          onDeleteCategory={handleDeleteCategory}
+        />
 
         <MenuItemModal
           isOpen={isModalOpen}

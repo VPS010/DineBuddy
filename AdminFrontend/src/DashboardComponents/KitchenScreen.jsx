@@ -282,7 +282,7 @@ const KitchenScreen = () => {
                   <OrderCard
                     order={order}
                     onItemStatusUpdate={handleItemStatusUpdate}
-                    isParcel={order.type === "parcel"}
+                    isParcel={order.type === "Parcel"}
                   />
                 </div>
               ))}

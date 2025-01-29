@@ -342,6 +342,51 @@ const getMenuCategories = async (req, res) => {
 }
 
 
+// Delete category route handler
+const deleteCategory = async (req, res) => {
+    const restaurantId = req.user.restaurantId;
+    const { category } = req.params; // Category to delete
+
+    try {
+        // Find the restaurant
+        const restaurant = await Restaurant.findById(restaurantId);
+
+        if (!restaurant) {
+            return res.status(404).json({ error: "Restaurant not found" });
+        }
+
+        // Check if category exists
+        if (!restaurant.categories.includes(category)) {
+            return res.status(404).json({ error: "Category not found" });
+        }
+
+        // Check if there are menu items using this category
+        const menuItemsWithCategory = await Menu.find({
+            restaurantid: restaurantId,
+            category: category
+        });
+
+        if (menuItemsWithCategory.length > 0) {
+            return res.status(400).json({
+                error: "Cannot delete category. It is being used by menu items."
+            });
+        }
+
+        // Remove the category
+        restaurant.categories = restaurant.categories.filter(c => c !== category);
+        await restaurant.save();
+
+        res.status(200).json({
+            message: "Category deleted successfully",
+            categories: restaurant.categories
+        });
+
+    } catch (error) {
+        console.error("Error deleting category:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+}
+
 
 // Utility function to upload image to ImgB
 const uploadToImgBB = async (base64Image) => {
@@ -440,6 +485,7 @@ const addMenuItem = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while adding the menu item.' });
     }
 };
+
 
 const getMenu = async (req, res) => {
     try {
@@ -595,6 +641,19 @@ const generateQRCode = async (req, res) => {
 
 
 
+// Create or get active session for a table
+const getOrCreateSession = async (tableNumber, restaurantId) => {
+    let session = await Session.findOne({ tableNumber, restaurantId, status: 'Active' });
+    if (!session) {
+        session = new Session({ tableNumber, restaurantId, status: 'Active' });
+        await session.save();
+    }
+    return session;
+};
+
+
+
+
 //Orders and Sessions management
 
 // Get all sessions for a restaurant
@@ -624,6 +683,73 @@ const activeSessions = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while fetching active sessions.' });
     }
 };
+
+
+// Admin Creates Order (Dine-In or Parcel)
+const createAdminOrder = async (req, res) => {
+    const { tableNumber, items, type, customerName } = req.body;
+    const restaurantId = req.user.restaurantId; // Extract restaurant ID from admin auth
+
+    try {
+        if (!['Dine-In', 'Parcel'].includes(type)) {
+            return res.status(400).json({ error: 'Invalid order type. Must be Dine-In or Parcel.' });
+        }
+
+        let session = null;
+        if (type === 'Dine-In') {
+            if (!tableNumber) {
+                return res.status(400).json({ error: 'Dine-In orders require a tableNumber.' });
+            }
+            session = await getOrCreateSession(tableNumber, restaurantId);
+        }
+
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'Invalid items format or empty items array.' });
+        }
+
+        const enrichedItems = await Promise.all(
+            items.map(async (item) => {
+                const menuItem = await Menu.findById(item.itemId);
+                if (!menuItem) throw new Error(`Menu item with ID ${item.itemId} not found`);
+                return {
+                    itemId: menuItem._id,
+                    name: menuItem.name,
+                    price: menuItem.price,
+                    image: menuItem.image || null,
+                    spiceLevel: item.spiceLevel || menuItem.spiceLevel,
+                    quantity: parseInt(item.quantity) || 1,
+                };
+            })
+        );
+
+        const totalAmount = enrichedItems.reduce((total, item) => total + item.price * item.quantity, 0);
+
+        const order = new Order({
+            tableNumber: type === 'Dine-In' ? tableNumber : null,
+            sessionId: type === 'Dine-In' ? session._id : null,
+            restaurantId,
+            customerName: customerName || 'Valued Customer',
+            items: enrichedItems,
+            totalAmount,
+            type,
+            status: 'Active',
+            paymentStatus: 'Unpaid',
+        });
+
+        await order.save();
+
+        res.status(201).json({
+            message: 'Order created successfully',
+            order,
+            session: session ? { sessionId: session._id, tableNumber: session.tableNumber } : null,
+        });
+    } catch (error) {
+        console.error('Error creating order:', error);
+        res.status(500).json({ error: 'An error occurred', details: error.message });
+    }
+};
+
+
 
 // Get all orders for a restaurant for Order Management
 const getOrders = async (req, res) => {
@@ -669,7 +795,7 @@ const getOrders = async (req, res) => {
 };
 
 
-// Get all orders for a restaurant for Kitchen Management
+// Get all orders for a restaurant to Kitchen Management
 const getKitchenOrders = async (req, res) => {
     try {
         // Query for active orders from the restaurant
@@ -695,6 +821,7 @@ const getKitchenOrders = async (req, res) => {
         });
     }
 };
+
 
 //Kitchen Screen: Update order item status
 const updateOrderItemStatus = async (req, res) => {
@@ -1038,6 +1165,7 @@ const orderPay = async (req, res) => {
         const { orderId } = req.params;
 
         // Find the order by ID
+        console.log('Order ID:', orderId);
         const order = await Order.findById(orderId);
 
         if (!order) {
@@ -1060,40 +1188,42 @@ const orderPay = async (req, res) => {
             { new: true }
         );
 
-        // Update associated session to 'Closed'
-        const updatedSession = await Session.findByIdAndUpdate(
-            order.sessionId,
-            {
-                status: 'Closed',
-                updatedAt: new Date()
-            },
-            { new: true }
-        );
+        // Only update session if it's a dine-in order
+        if (order.type === 'Dine-In' && order.sessionId) {
+            const updatedSession = await Session.findByIdAndUpdate(
+                order.sessionId,
+                {
+                    status: 'Closed',
+                    updatedAt: new Date()
+                },
+                { new: true }
+            );
 
-        // If session not found, respond with an error
-        if (!updatedSession) {
-            return res.status(404).json({ message: 'Session not found for this order' });
+            // If session not found for dine-in order, log warning but don't fail
+            if (!updatedSession) {
+                console.warn(`Session not found for dine-in order ${orderId}`);
+            }
         }
 
         res.status(200).json({
             success: true,
-            message: `Order successfully marked as Paid, status set to 'Closed', and session closed.`,
-            order: updatedOrder,
-            session: updatedSession
+            message: `Order successfully marked as Paid and status set to 'Closed'`,
+            order: updatedOrder
         });
     } catch (error) {
         console.error('Error in orderPay:', error);
-        res.status(500).json({ error: 'Error updating order and session statuses' });
+        res.status(500).json({ error: 'Error updating order status' });
     }
 };
 
 module.exports = {
     signupAdmin, loginAdmin, getAdminProfile, updateAdminProfile,
     getRestaurant, updateRestaurant,
-    menuCategories, getMenuCategories, addMenuItem, getMenu, getMenuItem, updateMenuItem, deleteMenuItem,
+    menuCategories, getMenuCategories, deleteCategory,
+    addMenuItem, getMenu, getMenuItem, updateMenuItem, deleteMenuItem,
     generateQRCode,
-    allSessions, activeSessions,
-    getOrders, editOrder, deleteOrder,
+    getOrCreateSession, allSessions, activeSessions,
+    createAdminOrder, getOrders, editOrder, deleteOrder,
     getKitchenOrders, updateOrderItemStatus,
     orderStatus, orderPay
 };

@@ -5,6 +5,7 @@ import Button from "./Button";
 import OrderStats from "./OrderStats";
 import OrderTable from "./OrderTable";
 import OrderDetails from "./OrderDetails";
+import CreateOrder from "./CreateOrders";
 
 const UnifiedAdminOrder = () => {
   const [expandedOrder, setExpandedOrder] = useState(null);
@@ -17,6 +18,7 @@ const UnifiedAdminOrder = () => {
   const [showRevenue, setShowRevenue] = useState(true);
   const [timeFilter, setTimeFilter] = useState("today");
   const [statusFilter, setStatusFilter] = useState("Unpaid");
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [menuItems, setMenuItems] = useState([]);
 
   const printRef = useRef();
@@ -127,6 +129,7 @@ const UnifiedAdminOrder = () => {
         })),
         customerName: order.customerName,
         paymentStatus: order.paymentStatus,
+        type: order.type,
       }));
 
       setOrders(formattedOrders);
@@ -526,6 +529,16 @@ const UnifiedAdminOrder = () => {
     }
   };
 
+  const handleAddOrderClick = () => {
+    setShowCreateOrder(true);
+  };
+
+  const handleOrderCreated = (newOrder) => {
+    setOrders((prevOrders) => [newOrder, ...prevOrders]);
+    setShowCreateOrder(false);
+    fetchOrders(); // Refresh the orders list
+  };
+
   const handleExportOrders = () => {
     const headers = [
       "Order ID",
@@ -561,11 +574,17 @@ const UnifiedAdminOrder = () => {
   };
 
   const filteredOrders = getFilteredOrders().filter((order) => {
-    const matchesSearch =
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.tableNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    // If there's no search term, return all orders
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Safely check each field with null coalescing
+    return (
+      (order?.id?.toString() || '').toLowerCase().includes(searchLower) ||
+      (order?.tableNumber?.toString() || '').toLowerCase().includes(searchLower) ||
+      (order?.customerName?.toString() || '').toLowerCase().includes(searchLower)
+    );
   });
 
   const dateFilteredOrders = getDateFilteredOrders();
@@ -662,8 +681,8 @@ const UnifiedAdminOrder = () => {
             {/*add order button*/}
             <Button
               variant="primary"
-              onClick={() => setExpandedOrder}
-              className="bg-blue-600 ml-auto mr-4 flex hover:bg-blue-700 border shadow-md text-white "
+              onClick={handleAddOrderClick}
+              className="bg-blue-600 ml-auto mr-4 flex hover:bg-blue-700 border shadow-md text-white"
             >
               <Plus /> Add Order
             </Button>
@@ -707,6 +726,15 @@ const UnifiedAdminOrder = () => {
             TAX_RATE={TAX_RATE}
             printRef={printRef}
             availableMenuItems={menuItems}
+          />
+        )}
+        {showCreateOrder && (
+          <CreateOrder
+            onClose={() => setShowCreateOrder(false)}
+            onCreateOrder={handleOrderCreated}
+            restaurantInfo={restaurantInfo}
+            availableMenuItems={menuItems}
+            TAX_RATE={TAX_RATE}
           />
         )}
       </main>
