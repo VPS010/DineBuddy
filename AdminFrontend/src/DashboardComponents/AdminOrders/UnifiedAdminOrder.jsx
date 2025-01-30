@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { Plus } from "lucide-react";
 import Button from "./Button";
@@ -137,7 +139,10 @@ const UnifiedAdminOrder = () => {
           name: item.name,
           quantity: item.quantity,
           price: item.price,
+          status: item.status,
           spiceLevel: item.spiceLevel,
+
+          image: item.image,
         })),
         customerName: order.customerName,
         paymentStatus: order.paymentStatus,
@@ -369,65 +374,21 @@ const UnifiedAdminOrder = () => {
     }
   };
 
-  const handleAddItem = async () => {
-    if (expandedOrder) {
-      const newItem = {
-        id: Date.now().toString(),
-        name: "",
-        quantity: 1,
-        price: 0,
-        spiceLevel: "Medium",
-      };
-
-      try {
-        const response = await axios.patch(
-          `http://localhost:3000/api/v1/admin/order/${expandedOrder.id}`,
-          {
-            action: "addItem",
-            item: {
-              itemId: newItem.id,
-              name: newItem.name,
-              quantity: newItem.quantity,
-              price: newItem.price,
-              spiceLevel: newItem.spiceLevel,
-            },
-          },
-          {
-            headers: {
-              Authorization: localStorage.getItem("authorization"),
-            },
-          }
-        );
-
-        if (response.data.success) {
-          setExpandedOrder((prev) => ({
-            ...prev,
-            items: [...prev.items, newItem],
-          }));
-          setHasChanges(true);
-        }
-      } catch (error) {
-        console.error("Error adding item:", error);
-        alert(
-          "Failed to add item: " +
-            (error.response?.data?.error || error.message)
-        );
-      }
-    }
-  };
-
   const handleSaveChanges = async () => {
     try {
       const subtotal = calculateSubtotal(expandedOrder.items);
       const total = subtotal + calculateTax(subtotal);
 
+      // Preserve all existing fields for each item
       const formattedItems = expandedOrder.items.map((item) => ({
-        itemId: item.id,
+        itemId: item.id || item.itemId, // Handle both id and itemId
         name: item.name,
         price: item.price,
         quantity: item.quantity,
         spiceLevel: item.spiceLevel,
-        status: "Pending", // Preserve item status
+        status: item.status || "Pending",
+        image: item.image, // Preserve image field
+        _id: item._id, // Preserve _id field if it exists
       }));
 
       const response = await axios.patch(
@@ -435,7 +396,8 @@ const UnifiedAdminOrder = () => {
         {
           action: "bulkEdit",
           items: formattedItems,
-          totalAmount: total, // Include total amount
+          customerName: expandedOrder.customerName,
+          totalAmount: total,
         },
         {
           headers: {
@@ -725,7 +687,17 @@ const UnifiedAdminOrder = () => {
             Export Orders
           </Button>
         </div>
-
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
         {expandedOrder && restaurantInfo && (
           <OrderDetails
             expandedOrder={expandedOrder}
@@ -734,7 +706,6 @@ const UnifiedAdminOrder = () => {
             handleSpiceLevelChange={handleSpiceLevelChange}
             handleQuantityChange={handleQuantityChange}
             handleDeleteItem={handleDeleteItem}
-            handleAddItem={handleAddItem}
             handleSaveChanges={handleSaveChanges}
             handlePrint={handlePrint}
             hasChanges={hasChanges}

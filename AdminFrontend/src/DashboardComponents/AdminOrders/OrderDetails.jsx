@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { toast } from "react-toastify";
 import Button from "./Button";
 import SpiceLevelDropdown from "./SpiceLevelDropdown";
 import { X, Plus, Printer, Search } from "lucide-react";
@@ -10,7 +11,6 @@ const OrderDetails = ({
   handleSpiceLevelChange,
   handleQuantityChange,
   handleDeleteItem,
-  handleAddItem,
   handleSaveChanges: onSaveChanges,
   hasChanges,
   restaurantInfo,
@@ -27,6 +27,28 @@ const OrderDetails = ({
   const printDivRef = useRef(null);
   const isPaid = expandedOrder?.paymentStatus === "Paid";
 
+  // Get row background color based on status
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "In Progress":
+        return "bg-blue-50";
+      case "Completed":
+        return "bg-green-50";
+      default:
+        return "";
+    }
+  };
+
+  // Check if item can be updated
+  const canUpdateItem = (status) => {
+    return status === "Pending";
+  };
+
+  // Generate a unique ID for new items
+  const generateUniqueId = () => {
+    return `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  };
+
   // Filter menu items based on search term
   const filteredMenuItems = useMemo(() => {
     if (!availableMenuItems) return [];
@@ -38,11 +60,14 @@ const OrderDetails = ({
   // Handle adding an item from the menu list
   const handleMenuItemAdd = (menuItem) => {
     const newItem = {
-      id: menuItem._id,
+      id: generateUniqueId(),
+      itemId: menuItem._id,
       name: menuItem.name,
       price: menuItem.price,
       quantity: 1,
       spiceLevel: "Medium",
+      image: menuItem.image,
+      status: "Pending",
     };
 
     const updatedItems = [...expandedOrder.items, newItem];
@@ -51,18 +76,7 @@ const OrderDetails = ({
       items: updatedItems,
     });
     setLocalHasChanges(true);
-  };
-
-  // Handle item name change
-  const handleItemNameChange = (itemId, newName) => {
-    const updatedItems = expandedOrder.items.map((i) =>
-      i.id === itemId ? { ...i, name: newName } : i
-    );
-    setExpandedOrder({
-      ...expandedOrder,
-      items: updatedItems,
-    });
-    setLocalHasChanges(true);
+    toast.success(`Added ${menuItem.name} to the order`);
   };
 
   // Keyboard shortcut for search focus
@@ -83,12 +97,44 @@ const OrderDetails = ({
       setIsSaving(true);
       await onSaveChanges(expandedOrder);
       setLocalHasChanges(false);
+      toast.success("Changes saved successfully!");
     } catch (error) {
-      console.error("Error saving changes:", error);
+      toast.error("Error saving changes: " + error.message);
     } finally {
       setIsSaving(false);
     }
   };
+
+  const handleItemDelete = async (itemId) => {
+    const itemName = expandedOrder.items.find(
+      (item) => item.id === itemId
+    )?.name;
+    await handleDeleteItem(itemId);
+    toast.success(`${itemName} removed from order`);
+  };
+
+  const handleSpiceLevelUpdate = (itemId, level) => {
+    const item = expandedOrder.items.find((item) => item.id === itemId);
+    if (!canUpdateItem(item.status)) {
+      toast.error("Cannot update items that are In Progress or Completed");
+      return;
+    }
+
+    handleSpiceLevelChange(itemId, level);
+    toast.info(`Updated spice level for ${item.name} to ${level}`);
+  };
+
+  const handleQuantityUpdate = (itemId, quantity) => {
+    const item = expandedOrder.items.find((item) => item.id === itemId);
+    if (!canUpdateItem(item.status)) {
+      toast.error("Cannot update items that are In Progress or Completed");
+      return;
+    }
+
+    handleQuantityChange(itemId, quantity);
+    toast.info(`Updated quantity for ${item.name} to ${quantity}`);
+  };
+
 
   const handleModalClick = (e) => {
     if (e.target === e.currentTarget) {
@@ -293,7 +339,6 @@ const OrderDetails = ({
           } flex flex-col overflow-hidden`}
         >
           <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
-            {/* Regular content as before */}
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold">{restaurantInfo.name}</h2>
               <p className="text-gray-600">{restaurantInfo.address}</p>
@@ -305,8 +350,7 @@ const OrderDetails = ({
                 Order #{expandedOrder.id}
               </h3>
               <p>
-                {" "}
-                {expandedOrder.type == "Parcel"
+                {expandedOrder.type === "Parcel"
                   ? "Parcel"
                   : `Table: ${expandedOrder.tableNumber}`}
               </p>
@@ -339,6 +383,7 @@ const OrderDetails = ({
                 <thead>
                   <tr className="bg-gray-50 sticky top-0">
                     <th className="px-4 py-2">Item</th>
+                    <th className="px-4 py-2">Status</th>
                     <th className="px-4 py-2">Spice Level</th>
                     <th className="px-4 py-2">Quantity</th>
                     <th className="px-4 py-2">Price</th>
@@ -348,49 +393,40 @@ const OrderDetails = ({
                 </thead>
                 <tbody>
                   {expandedOrder.items.map((item) => (
-                    <tr key={item.id} className="border-b">
+                    <tr
+                      key={item.id}
+                      className={`border-b ${getStatusColor(item.status)}`}
+                    >
                       <td className="px-4 py-2">
-                        {isPaid ? (
-                          <span>{item.name}</span>
-                        ) : (
-                          <input
-                            type="text"
-                            value={item.name}
-                            onChange={(e) =>
-                              handleItemNameChange(item.id, e.target.value)
-                            }
-                            className="w-full px-2 py-1 border rounded"
-                            placeholder="Item name"
-                            disabled={isSaving}
-                          />
-                        )}
+                        <span className="font-medium">{item.name}</span>
                       </td>
                       <td className="px-4 py-2">
-                        {isPaid ? (
+                        <span>{item.status}</span>
+                      </td>
+                      <td className="px-4 py-2">
+                        {isPaid || !canUpdateItem(item.status) ? (
                           <span>{item.spiceLevel}</span>
                         ) : (
                           <SpiceLevelDropdown
                             value={item.spiceLevel}
-                            onChange={(level) => {
-                              handleSpiceLevelChange(item.id, level);
-                              setLocalHasChanges(true);
-                            }}
+                            onChange={(level) =>
+                              handleSpiceLevelUpdate(item.id, level)
+                            }
                             disabled={isSaving}
                           />
                         )}
                       </td>
                       <td className="px-4 py-2">
-                        {isPaid ? (
+                        {isPaid || !canUpdateItem(item.status) ? (
                           <span>{item.quantity}</span>
                         ) : (
                           <input
                             type="number"
                             min="1"
                             value={item.quantity}
-                            onChange={(e) => {
-                              handleQuantityChange(item.id, e.target.value);
-                              setLocalHasChanges(true);
-                            }}
+                            onChange={(e) =>
+                              handleQuantityUpdate(item.id, e.target.value)
+                            }
                             className="w-20 px-2 py-1 border rounded"
                             disabled={isSaving}
                           />
@@ -403,12 +439,9 @@ const OrderDetails = ({
                       {!isPaid && (
                         <td className="px-4 py-2">
                           <button
-                            onClick={() => {
-                              handleDeleteItem(item.id);
-                              setLocalHasChanges(true);
-                            }}
+                            onClick={() => handleItemDelete(item.id)}
                             className="text-red-600 hover:text-red-800 disabled:opacity-50"
-                            disabled={isSaving}
+                            disabled={isSaving || !canUpdateItem(item.status)}
                           >
                             <X className="w-5 h-5" />
                           </button>
@@ -419,22 +452,6 @@ const OrderDetails = ({
                 </tbody>
               </table>
             </div>
-
-            {!isPaid && (
-              <div className="mb-6">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    handleAddItem();
-                    setLocalHasChanges(true);
-                  }}
-                  disabled={isSaving}
-                  className="flex items-center"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Add Item
-                </Button>
-              </div>
-            )}
 
             <div className="flex flex-col items-end space-y-2 mb-8">
               <p className="text-lg">Subtotal: ₹{subtotal.toFixed(2)}</p>

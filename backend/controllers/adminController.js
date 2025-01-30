@@ -178,7 +178,7 @@ const updateAdminProfile = async (req, res) => {
 
 const updateRestaurant = async (req, res) => {
     try {
-        const { name, address, contact, description, businessHours,tax, geoFence } = req.body;
+        const { name, address, contact, description, businessHours, tax, geoFence } = req.body;
 
         console.log('Received geoFence data:', geoFence);
 
@@ -193,7 +193,7 @@ const updateRestaurant = async (req, res) => {
         if (address) restaurant.address = address;
         if (contact) restaurant.contact = contact;
         if (description) restaurant.description = description;
-        if(tax) restaurant.tax = tax;
+        if (tax) restaurant.tax = tax;
 
         // Update business hours if provided
         if (businessHours) {
@@ -903,7 +903,6 @@ const updateOrderItemStatus = async (req, res) => {
 };
 
 
-
 const editOrder = async (req, res) => {
     const { id } = req.params;
     const { action, item, items, customerName } = req.body;
@@ -923,154 +922,142 @@ const editOrder = async (req, res) => {
                     return res.status(400).json({ error: 'Valid items array is required for bulk edit.' });
                 }
 
+                // Get the existing order to preserve item statuses
+                const existingOrder = await Order.findById(id);
+                if (!existingOrder) {
+                    return res.status(404).json({ error: 'Order not found.' });
+                }
+
+                // Create a map of existing items with their statuses and IDs
+                const existingItems = new Map(
+                    existingOrder.items.map(item => [
+                        item.itemId.toString(),
+                        { status: item.status, _id: item._id }
+                    ])
+                );
+
+                // Enrich items with preserved status and _id where applicable
+                const validatedItems = items.map(item => {
+                    const existing = existingItems.get(item.itemId.toString());
+                    return {
+                        itemId: item.itemId,
+                        name: item.name,
+                        price: item.price,
+                        image: item.image || null,
+                        spiceLevel: item.spiceLevel,
+                        quantity: item.quantity,
+                        // Preserve existing status or default to 'Pending'
+                        status: existing ? existing.status : 'Pending',
+                        // Preserve existing _id or let MongoDB generate new one
+                        _id: existing ? existing._id : undefined
+                    };
+                });
+
                 const bulkEditUpdate = {
-                    items: items,
+                    items: validatedItems,
                     ...updateTime,
-                    totalAmount: {
-                        $reduce: {
-                            input: items,
-                            initialValue: 0,
-                            in: {
-                                $add: ["$$value", { $multiply: ["$$this.price", "$$this.quantity"] }]
-                            }
-                        }
-                    }
+                    totalAmount: validatedItems.reduce(
+                        (sum, item) => sum + (item.price * item.quantity),
+                        0
+                    )
                 };
 
-                // Add customerName to update if provided
                 if (customerName !== undefined) {
                     bulkEditUpdate.customerName = customerName;
                 }
 
                 order = await Order.findByIdAndUpdate(
                     id,
-                    [{ $set: bulkEditUpdate }],
+                    bulkEditUpdate,
                     { new: true }
                 );
                 break;
 
             case 'addItem':
-                // Validate single item for add
                 if (!item) {
                     return res.status(400).json({ error: 'Item data is required for adding an item.' });
                 }
 
+                // Add default status for new item
+                const newItem = {
+                    ...item,
+                    status: 'Pending'
+                };
+
                 order = await Order.findByIdAndUpdate(
                     id,
-                    [{
-                        $set: {
-                            items: { $concatArrays: ["$items", [item]] },
-                            ...updateTime,
-                            totalAmount: {
-                                $reduce: {
-                                    input: { $concatArrays: ["$items", [item]] },
-                                    initialValue: 0,
-                                    in: {
-                                        $add: ["$$value", { $multiply: ["$$this.price", "$$this.quantity"] }]
-                                    }
-                                }
-                            }
-                        }
-                    }],
+                    {
+                        $push: { items: newItem },
+                        ...updateTime,
+                        $inc: { totalAmount: item.price * item.quantity }
+                    },
                     { new: true }
                 );
                 break;
 
             case 'editItem':
-                // Validate single item for edit
                 if (!item || !item.itemId) {
                     return res.status(400).json({ error: 'ItemId is required to edit an item.' });
                 }
 
+                // Get existing item to preserve status
+                const existingItem = await Order.findOne(
+                    { _id: id, 'items.itemId': item.itemId },
+                    { 'items.$': 1 }
+                );
+
+                if (!existingItem || !existingItem.items[0]) {
+                    return res.status(404).json({ error: 'Item not found in order.' });
+                }
+
+                // Preserve existing status and _id
+                const updatedItem = {
+                    ...item,
+                    status: existingItem.items[0].status,
+                    _id: existingItem.items[0]._id
+                };
+
                 order = await Order.findOneAndUpdate(
                     { _id: id, 'items.itemId': item.itemId },
-                    [{
-                        $set: {
-                            items: {
-                                $map: {
-                                    input: "$items",
-                                    as: "i",
-                                    in: {
-                                        $cond: [
-                                            { $eq: ["$$i.itemId", item.itemId] },
-                                            item,
-                                            "$$i"
-                                        ]
-                                    }
-                                }
-                            },
-                            ...updateTime
-                        }
-                    },
                     {
-                        $set: {
-                            totalAmount: {
-                                $reduce: {
-                                    input: "$items",
-                                    initialValue: 0,
-                                    in: {
-                                        $add: ["$$value", { $multiply: ["$$this.price", "$$this.quantity"] }]
-                                    }
-                                }
-                            }
-                        }
-                    }],
+                        $set: { 'items.$': updatedItem },
+                        ...updateTime
+                    },
                     { new: true }
                 );
+
+                // Recalculate total amount
+                if (order) {
+                    order.totalAmount = order.items.reduce(
+                        (sum, item) => sum + (item.price * item.quantity),
+                        0
+                    );
+                    await order.save();
+                }
                 break;
 
             case 'removeItem':
-                // Validate single item for remove
                 if (!item || !item.itemId) {
                     return res.status(400).json({ error: 'ItemId is required to remove an item.' });
                 }
 
                 order = await Order.findByIdAndUpdate(
                     id,
-                    [{
-                        $set: {
-                            items: {
-                                $filter: {
-                                    input: "$items",
-                                    cond: { $ne: ["$$this.itemId", item.itemId] }
-                                }
-                            },
-                            ...updateTime
-                        }
-                    },
                     {
-                        $set: {
-                            totalAmount: {
-                                $reduce: {
-                                    input: "$items",
-                                    initialValue: 0,
-                                    in: {
-                                        $add: ["$$value", { $multiply: ["$$this.price", "$$this.quantity"] }]
-                                    }
-                                }
-                            }
-                        }
-                    }],
+                        $pull: { items: { itemId: item.itemId } },
+                        ...updateTime
+                    },
                     { new: true }
                 );
-                break;
 
-            case 'updateCustomerName':
-                // Add a specific case for customer name updates
-                if (customerName === undefined) {
-                    return res.status(400).json({ error: 'Customer name is required for this action.' });
+                // Recalculate total amount after removal
+                if (order) {
+                    order.totalAmount = order.items.reduce(
+                        (sum, item) => sum + (item.price * item.quantity),
+                        0
+                    );
+                    await order.save();
                 }
-
-                order = await Order.findByIdAndUpdate(
-                    id,
-                    [{
-                        $set: {
-                            customerName: customerName,
-                            ...updateTime
-                        }
-                    }],
-                    { new: true }
-                );
                 break;
 
             default:

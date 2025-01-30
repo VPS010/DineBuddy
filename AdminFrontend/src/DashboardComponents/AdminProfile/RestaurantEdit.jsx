@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 const RestaurantEdit = ({
@@ -8,9 +8,14 @@ const RestaurantEdit = ({
   loading,
   onSubmit,
 }) => {
-  const [restaurantFormData, setRestaurantFormData] = useState({
-    ...restaurant,
-  });
+  const [restaurantFormData, setRestaurantFormData] = useState({});
+
+  // Update form data when restaurant prop or isEditing changes
+  useEffect(() => {
+    if (restaurant) {
+      setRestaurantFormData({ ...restaurant });
+    }
+  }, [restaurant, isEditing]);
 
   const handleRestaurantInputChange = (e) => {
     const value =
@@ -104,7 +109,7 @@ const RestaurantEdit = ({
                 <input
                   type="text"
                   name="name"
-                  value={restaurantFormData.name}
+                  value={restaurantFormData.name || ""}
                   onChange={handleRestaurantInputChange}
                   className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500"
                 />
@@ -114,7 +119,7 @@ const RestaurantEdit = ({
                 <input
                   type="text"
                   name="address"
-                  value={restaurantFormData.address}
+                  value={restaurantFormData.address || ""}
                   onChange={handleRestaurantInputChange}
                   className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500"
                 />
@@ -124,7 +129,7 @@ const RestaurantEdit = ({
                 <input
                   type="text"
                   name="contact"
-                  value={restaurantFormData.contact}
+                  value={restaurantFormData.contact || ""}
                   onChange={handleRestaurantInputChange}
                   className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500"
                 />
@@ -137,7 +142,7 @@ const RestaurantEdit = ({
                   min="0"
                   max="100"
                   step="0.01"
-                  value={restaurantFormData.tax * 100}
+                  value={restaurantFormData.tax * 100 || ""}
                   onChange={(e) => {
                     const taxDecimal = parseFloat(e.target.value) / 100;
                     setRestaurantFormData({
@@ -152,7 +157,7 @@ const RestaurantEdit = ({
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-gray-500">Business Hours</label>
-                {Object.entries(restaurantFormData.businessHours).map(
+                {Object.entries(restaurantFormData.businessHours || {}).map(
                   ([day, hours]) => (
                     <div key={day} className="mt-2">
                       <label className="text-xs text-gray-500">{day}</label>
