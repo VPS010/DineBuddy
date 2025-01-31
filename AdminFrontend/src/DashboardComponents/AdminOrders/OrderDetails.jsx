@@ -4,6 +4,39 @@ import Button from "./Button";
 import SpiceLevelDropdown from "./SpiceLevelDropdown";
 import { X, Plus, Printer, Search } from "lucide-react";
 
+const ConfirmDialog = ({
+  show,
+  onConfirm,
+  onCancel,
+  message,
+  confirmText,
+  cancelText,
+}) => {
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+        <p className="mb-4 text-gray-700">{message}</p>
+        <div className="flex justify-end space-x-2">
+          <button
+            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+            onClick={onCancel}
+          >
+            {cancelText || "Cancel"}
+          </button>
+          <button
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            onClick={onConfirm}
+          >
+            {confirmText || "Confirm"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const OrderDetails = ({
   expandedOrder,
   setExpandedOrder,
@@ -22,12 +55,17 @@ const OrderDetails = ({
   const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [localHasChanges, setLocalHasChanges] = useState(hasChanges);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [itemToEdit, setItemToEdit] = useState(null);
   const searchInputRef = useRef(null);
   const orderDetailsRef = useRef(null);
   const printDivRef = useRef(null);
   const isPaid = expandedOrder?.paymentStatus === "Paid";
 
-  // Get row background color based on status
+  // Existing functions remain the same...
   const getStatusColor = (status) => {
     switch (status) {
       case "In Progress":
@@ -39,14 +77,113 @@ const OrderDetails = ({
     }
   };
 
-  // Check if item can be updated
-  const canUpdateItem = (status) => {
-    return status === "Pending";
-  };
-
   // Generate a unique ID for new items
   const generateUniqueId = () => {
     return `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (localHasChanges) {
+        e.preventDefault();
+        e.returnValue = "You have unsaved changes.";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [localHasChanges]);
+
+  const handleModalClose = () => {
+    if (localHasChanges) {
+      setShowCloseDialog(true);
+    } else {
+      setExpandedOrder(null);
+    }
+  };
+
+  const handleCloseConfirm = async () => {
+    try {
+      await handleSaveChanges();
+      setShowCloseDialog(false);
+      setExpandedOrder(null);
+    } catch (error) {
+      toast.error("Failed to save changes. Please try again.");
+    }
+  };
+
+  const handleCloseWithoutSaving = () => {
+    setShowCloseDialog(false);
+    setExpandedOrder(null);
+  };
+
+  const handleModalClick = (e) => {
+    if (e.target === e.currentTarget) {
+      if (localHasChanges) {
+        setShowCloseDialog(true);
+      } else {
+        setExpandedOrder(null);
+      }
+    }
+  };
+
+  const initiateItemEdit = (item, onConfirm) => {
+    if (item.status === "In Progress" || item.status === "Completed") {
+      setItemToEdit({ ...item, onConfirm });
+      setShowEditDialog(true);
+    } else {
+      onConfirm();
+    }
+  };
+
+  const handleSpiceLevelUpdate = (itemId, level) => {
+    const item = expandedOrder.items.find((item) => item.id === itemId);
+    initiateItemEdit(item, () => {
+      handleSpiceLevelChange(itemId, level);
+      setLocalHasChanges(true);
+    });
+  };
+
+  const handleQuantityUpdate = (itemId, quantity) => {
+    const item = expandedOrder.items.find((item) => item.id === itemId);
+    initiateItemEdit(item, () => {
+      handleQuantityChange(itemId, quantity);
+      setLocalHasChanges(true);
+    });
+  };
+
+  const initiateItemDelete = (item) => {
+    if (item.status === "In Progress" || item.status === "Completed") {
+      setItemToDelete(item);
+      setShowDeleteDialog(true);
+    } else {
+      handleItemDelete(item.id);
+    }
+  };
+
+  const handleItemDelete = async (itemId) => {
+    try {
+      const itemName = expandedOrder.items.find(
+        (item) => item.id === itemId
+      )?.name;
+
+      // Update the local state first
+      const updatedItems = expandedOrder.items.filter(
+        (item) => item.id !== itemId
+      );
+      setExpandedOrder({
+        ...expandedOrder,
+        items: updatedItems,
+      });
+
+      // Call the parent handler
+      await handleDeleteItem(itemId);
+      setLocalHasChanges(true);
+      toast.success(`${itemName} removed from order`);
+    } catch (error) {
+      toast.error("Failed to delete item: " + error.message);
+      // Revert the local state if the deletion fails
+      setExpandedOrder({ ...expandedOrder });
+    }
   };
 
   // Filter menu items based on search term
@@ -102,43 +239,6 @@ const OrderDetails = ({
       toast.error("Error saving changes: " + error.message);
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleItemDelete = async (itemId) => {
-    const itemName = expandedOrder.items.find(
-      (item) => item.id === itemId
-    )?.name;
-    await handleDeleteItem(itemId);
-    toast.success(`${itemName} removed from order`);
-  };
-
-  const handleSpiceLevelUpdate = (itemId, level) => {
-    const item = expandedOrder.items.find((item) => item.id === itemId);
-    if (!canUpdateItem(item.status)) {
-      toast.error("Cannot update items that are In Progress or Completed");
-      return;
-    }
-
-    handleSpiceLevelChange(itemId, level);
-    toast.info(`Updated spice level for ${item.name} to ${level}`);
-  };
-
-  const handleQuantityUpdate = (itemId, quantity) => {
-    const item = expandedOrder.items.find((item) => item.id === itemId);
-    if (!canUpdateItem(item.status)) {
-      toast.error("Cannot update items that are In Progress or Completed");
-      return;
-    }
-
-    handleQuantityChange(itemId, quantity);
-    toast.info(`Updated quantity for ${item.name} to ${quantity}`);
-  };
-
-
-  const handleModalClick = (e) => {
-    if (e.target === e.currentTarget) {
-      setExpandedOrder(null);
     }
   };
 
@@ -289,17 +389,54 @@ const OrderDetails = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
       onClick={handleModalClick}
     >
-      {/* Normal View */}
+      {/* Confirm dialogs remain the same */}
+      <ConfirmDialog
+        show={showDeleteDialog}
+        message={`This item is ${itemToDelete?.status}. Are you sure you want to delete it?`}
+        onConfirm={() => {
+          handleItemDelete(itemToDelete.id);
+          setShowDeleteDialog(false);
+          setItemToDelete(null);
+        }}
+        onCancel={() => {
+          setShowDeleteDialog(false);
+          setItemToDelete(null);
+        }}
+      />
+
+      <ConfirmDialog
+        show={showEditDialog}
+        message={`This item is ${itemToEdit?.status}. Do you want to modify it?`}
+        onConfirm={() => {
+          itemToEdit?.onConfirm();
+          setShowEditDialog(false);
+          setItemToEdit(null);
+        }}
+        onCancel={() => {
+          setShowEditDialog(false);
+          setItemToEdit(null);
+        }}
+      />
+
+      <ConfirmDialog
+        show={showCloseDialog}
+        message="You have unsaved changes. Do you want to save before closing?"
+        confirmText="Save & Close"
+        cancelText="Close Without Saving"
+        onConfirm={handleCloseConfirm}
+        onCancel={handleCloseWithoutSaving}
+      />
+
       <div
-        className="bg-white p-8 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex"
+        className="bg-white rounded-lg w-full h-[90vh] max-w-6xl flex flex-col md:flex-row overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Menu Search Section */}
         {!isPaid && (
-          <div className="w-1/3 pr-4 border-r flex flex-col">
+          <div className="w-full md:w-1/3 p-4 border-b md:border-b-0 md:border-r flex flex-col max-h-[30vh] md:max-h-full">
             <div className="relative mb-4">
               <input
                 ref={searchInputRef}
@@ -318,13 +455,13 @@ const OrderDetails = ({
                   className="flex justify-between items-center p-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => handleMenuItemAdd(menuItem)}
                 >
-                  <div>
+                  <div className="flex-grow">
                     <span className="font-medium">{menuItem.name}</span>
                     <span className="text-gray-500 ml-2">
                       ₹{menuItem.price.toFixed(2)}
                     </span>
                   </div>
-                  <Plus className="text-green-500" />
+                  <Plus className="text-green-500 flex-shrink-0" />
                 </div>
               ))}
             </div>
@@ -333,18 +470,19 @@ const OrderDetails = ({
 
         {/* Order Details Section */}
         <div
-          ref={orderDetailsRef}
-          className={`${
-            !isPaid ? "w-2/3 pl-4" : "w-full"
-          } flex flex-col overflow-hidden`}
+          className={`flex-1 flex flex-col overflow-hidden ${
+            !isPaid ? "md:w-2/3" : "w-full"
+          } p-4`}
         >
-          <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
+          <div className="flex-grow overflow-y-auto">
+            {/* Restaurant Info */}
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold">{restaurantInfo.name}</h2>
               <p className="text-gray-600">{restaurantInfo.address}</p>
               <p className="text-gray-600">{restaurantInfo.phone}</p>
             </div>
 
+            {/* Order Info */}
             <div className="mb-6 space-y-3">
               <h3 className="text-lg font-semibold">
                 Order #{expandedOrder.id}
@@ -378,82 +516,96 @@ const OrderDetails = ({
               <p>Date: {new Date(expandedOrder.createdAt).toLocaleString()}</p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full mb-6">
-                <thead>
-                  <tr className="bg-gray-50 sticky top-0">
-                    <th className="px-4 py-2">Item</th>
-                    <th className="px-4 py-2">Status</th>
-                    <th className="px-4 py-2">Spice Level</th>
-                    <th className="px-4 py-2">Quantity</th>
-                    <th className="px-4 py-2">Price</th>
-                    <th className="px-4 py-2">Subtotal</th>
-                    {!isPaid && <th className="px-4 py-2">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {expandedOrder.items.map((item) => (
-                    <tr
-                      key={item.id}
-                      className={`border-b ${getStatusColor(item.status)}`}
-                    >
-                      <td className="px-4 py-2">
-                        <span className="font-medium">{item.name}</span>
-                      </td>
-                      <td className="px-4 py-2">
-                        <span>{item.status}</span>
-                      </td>
-                      <td className="px-4 py-2">
-                        {isPaid || !canUpdateItem(item.status) ? (
-                          <span>{item.spiceLevel}</span>
-                        ) : (
-                          <SpiceLevelDropdown
-                            value={item.spiceLevel}
-                            onChange={(level) =>
-                              handleSpiceLevelUpdate(item.id, level)
-                            }
-                            disabled={isSaving}
-                          />
-                        )}
-                      </td>
-                      <td className="px-4 py-2">
-                        {isPaid || !canUpdateItem(item.status) ? (
-                          <span>{item.quantity}</span>
-                        ) : (
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              handleQuantityUpdate(item.id, e.target.value)
-                            }
-                            className="w-20 px-2 py-1 border rounded"
-                            disabled={isSaving}
-                          />
-                        )}
-                      </td>
-                      <td className="px-4 py-2">₹{item.price.toFixed(2)}</td>
-                      <td className="px-4 py-2">
-                        ₹{(item.price * item.quantity).toFixed(2)}
-                      </td>
-                      {!isPaid && (
-                        <td className="px-4 py-2">
-                          <button
-                            onClick={() => handleItemDelete(item.id)}
-                            className="text-red-600 hover:text-red-800 disabled:opacity-50"
-                            disabled={isSaving || !canUpdateItem(item.status)}
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Items Table */}
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-full inline-block align-middle">
+                <div className="overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="p-4 text-left text-sm font-semibold text-gray-900">
+                          Item
+                        </th>
+                        <th className="p-4 text-left text-sm font-semibold text-gray-900 whitespace-nowrap">
+                          Spice Level
+                        </th>
+                        <th className="p-4 text-left text-sm font-semibold text-gray-900 whitespace-nowrap">
+                          Qty
+                        </th>
+                        <th className="p-4 text-left text-sm font-semibold text-gray-900">
+                          Status
+                        </th>
+                        <th className="p-4 text-right text-sm font-semibold text-gray-900">
+                          Price
+                        </th>
+                        {!isPaid && <th className="p-4 w-16"></th>}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {expandedOrder.items.map((item) => (
+                        <tr
+                          key={item.id}
+                          className={getStatusColor(item.status)}
+                        >
+                          <td className="px-4 py-2">
+                            <div className="font-medium text-gray-900">
+                              {item.name}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2">
+                            {isPaid ? (
+                              <span>{item.spiceLevel}</span>
+                            ) : (
+                              <SpiceLevelDropdown
+                                value={item.spiceLevel}
+                                onChange={(level) =>
+                                  handleSpiceLevelUpdate(item.id, level)
+                                }
+                                disabled={isSaving}
+                              />
+                            )}
+                          </td>
+                          <td className="px-4 py-2">
+                            {isPaid ? (
+                              <span>{item.quantity}</span>
+                            ) : (
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) =>
+                                  handleQuantityUpdate(item.id, e.target.value)
+                                }
+                                className="w-16 px-2 py-1 border rounded"
+                                disabled={isSaving}
+                              />
+                            )}
+                          </td>
+                          <td className="px-4 py-2">{item.status}</td>
+                          <td className="px-4 py-2 text-right">
+                            ₹{(item.price * item.quantity).toFixed(2)}
+                          </td>
+                          {!isPaid && (
+                            <td className="px-4 py-2 text-right">
+                              <button
+                                onClick={() => initiateItemDelete(item)}
+                                className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                                disabled={isSaving}
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-col items-end space-y-2 mb-8">
+            {/* Totals */}
+            <div className="mt-6 flex flex-col items-end space-y-2">
               <p className="text-lg">Subtotal: ₹{subtotal.toFixed(2)}</p>
               <p className="text-lg">
                 Tax ({(TAX_RATE * 100).toFixed(0)}%): ₹{tax.toFixed(2)}
@@ -466,7 +618,7 @@ const OrderDetails = ({
           <div className="flex justify-end items-center space-x-3 mt-4 pt-4 border-t">
             <Button
               variant="ghost"
-              onClick={() => setExpandedOrder(null)}
+              onClick={handleModalClose}
               disabled={isSaving}
             >
               Close

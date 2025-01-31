@@ -37,7 +37,7 @@ const MenuPage = () => {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          `http://localhost:3000/api/v1/user/menu/${restaurantId}`
+          `https://wvvjg7zh-3000.inc1.devtunnels.ms/api/v1/user/menu/${restaurantId}`
         );
 
         if (response.data) {
