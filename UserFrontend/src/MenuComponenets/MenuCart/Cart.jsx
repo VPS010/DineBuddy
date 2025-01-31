@@ -11,7 +11,7 @@ import { ConfirmationDialog } from "./ConfirmationDialog";
 import LocationVerification from "./LocationVerification";
 
 const api = axios.create({
-  baseURL: "https://wvvjg7zh-3000.inc1.devtunnels.ms/api/v1",
+  baseURL: "http://localhost:3000/api/v1",
   headers: {
     "Content-Type": "application/json",
   },
@@ -48,11 +48,61 @@ const Cart = ({
   const [itemToRemove, setItemToRemove] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [deletionDialog, setDeletionDialog] = useState({
+    isOpen: false,
+    message: "",
+    itemId: null,
+    orderId: null,
+  });
   const [orderPlacementDialog, setOrderPlacementDialog] = useState({
     isOpen: false,
     message: "",
     title: "",
   });
+
+  const deleteOrderItem = async (itemId) => {
+    try {
+      const response = await api.delete(`/user/order/${tableNumber}/${itemId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      setIsLoading(true);
+      const { itemId } = deletionDialog;
+
+      await deleteOrderItem(itemId);
+      await fetchOrderedItems(); // Refresh the ordered items list
+
+      toast.success("Item deleted successfully");
+      setDeletionDialog({
+        isOpen: false,
+        message: "",
+        itemId: null,
+      });
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error || "Failed to delete item";
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOrderedItemDeleteAttempt = (status) => {
+    if (status.allowed) {
+      setDeletionDialog({
+        isOpen: true,
+        message: status.message,
+        itemId: status.item._id,
+      });
+    } else {
+      toast.info(status.message);
+    }
+  };
 
   const handleOrderPlacement = async () => {
     if (isLoading) {
@@ -61,7 +111,6 @@ const Cart = ({
     }
 
     try {
-      // Validate cart items before proceeding
       const invalidItems = cart.filter((item) => {
         const itemId = item.itemId || item._id || item.id;
         return !itemId;
@@ -128,18 +177,11 @@ const Cart = ({
   };
 
   useEffect(() => {
-    // Initial fetch
     fetchOrderedItems();
-
-    // Set up polling interval
-    const intervalId = setInterval(fetchOrderedItems, 30000); // 30 seconds
-
-    // Cleanup function to clear interval when component unmounts
-    // or when tableNumber/restaurantId changes
+    const intervalId = setInterval(fetchOrderedItems, 30000);
     return () => clearInterval(intervalId);
   }, [tableNumber, restaurantId]);
 
-  
   const getOrCreateSession = async () => {
     setIsLoading(true);
     try {
@@ -231,6 +273,7 @@ const Cart = ({
       setIsLoading(false);
     }
   };
+
   const consolidateCart = (items) => {
     const consolidatedMap = new Map();
 
@@ -261,6 +304,7 @@ const Cart = ({
 
     return Array.from(consolidatedMap.values());
   };
+
   useEffect(() => {
     if (cart.length > 0) {
       const consolidated = consolidateCart(cart);
@@ -292,16 +336,13 @@ const Cart = ({
     locationVerification.startVerification();
   };
 
-
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Check if cart is open and click is outside the cart
       if (
         isCartOpen &&
         cartRef.current &&
         !cartRef.current.contains(event.target)
       ) {
-        // Prevent closing if clicking on elements that should open the cart
         const isCartTrigger = event.target.closest(
           '[data-cart-trigger="true"]'
         );
@@ -311,12 +352,10 @@ const Cart = ({
       }
     };
 
-    // Add event listener when cart is open
     if (isCartOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
-    // Cleanup
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -332,7 +371,9 @@ const Cart = ({
       <div className="flex flex-col h-full">
         <div className="sticky top-0 p-4 border-b border-[#E8E1D3] flex justify-between items-center bg-[#F9F6F0]">
           <h2 className="text-[#2D3436] font-semibold text-lg">Your Cart</h2>
-          <h2 className="text-[#2D3436] font-semibold text-lg">Table-{tableNumber}</h2>
+          <h2 className="text-[#2D3436] font-semibold text-lg">
+            Table-{tableNumber}
+          </h2>
           <button
             onClick={() => setIsCartOpen(false)}
             className="p-2 text-[#2D3436] hover:bg-[#E8E1D3] rounded-full transition-colors"
@@ -370,7 +411,12 @@ const Cart = ({
             </h3>
             {orderedItems.length > 0 ? (
               orderedItems.map((item) => (
-                <OrderedItem key={item.itemId} item={item} />
+                <OrderedItem
+                  key={item._id}
+                  item={item}
+                  orderId={sessionId}
+                  onDeleteAttempt={handleOrderedItemDeleteAttempt}
+                />
               ))
             ) : (
               <p className="text-[#666666] text-center">
@@ -381,10 +427,7 @@ const Cart = ({
         </div>
 
         <div className="sticky bottom-0 bg-white border-t border-[#E8E1D3]">
-          <CartSummary
-            onPlaceOrder={handlePlaceOrder}
-            isLoading={isLoading}
-          />
+          <CartSummary onPlaceOrder={handlePlaceOrder} isLoading={isLoading} />
         </div>
       </div>
 
@@ -396,6 +439,17 @@ const Cart = ({
         onCancel={() => setDialogOpen(false)}
         confirmText="Remove"
         confirmButtonClass="bg-[#9E2A2F] hover:bg-[#8E1A1F]"
+      />
+
+      <ConfirmationDialog
+        isOpen={deletionDialog.isOpen}
+        title="Delete Order Item"
+        message={deletionDialog.message}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeletionDialog({ ...deletionDialog, isOpen: false })}
+        confirmText="Delete"
+        confirmButtonClass="bg-[#9E2A2F] hover:bg-[#8E1A1F]"
+        isLoading={isLoading}
       />
 
       <ConfirmationDialog
