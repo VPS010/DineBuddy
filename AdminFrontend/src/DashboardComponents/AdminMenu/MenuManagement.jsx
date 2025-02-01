@@ -16,6 +16,8 @@ const MenuManagement = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [error, setError] = useState(null);
+  const [formData, setFormData] = useState(null);
+
 
   const token = localStorage.getItem("authorization");
   const api = axios.create({
@@ -38,7 +40,6 @@ const MenuManagement = () => {
     image: "/api/placeholder/400/400",
   };
 
-  const [formData, setFormData] = useState(initialFormData);
 
   // Fetch categories
   useEffect(() => {
@@ -56,7 +57,7 @@ const MenuManagement = () => {
         setError(null);
       } catch (err) {
         setError("Failed to fetch categories");
-        console.error("Error fetching categories:", err);
+        // console.error("Error fetching categories:", err);
       }
     };
 
@@ -65,21 +66,32 @@ const MenuManagement = () => {
 
   // Fetch menu items
   useEffect(() => {
-    const fetchMenuItems = async () => {
-      setLoading(true);
+    const fetchCategories = async () => {
       try {
-        const response = await api.get("/api/v1/admin/menu");
-        setMenuItems(response.data.menuItems);
+        const response = await api.get("/api/v1/admin/menu/categories");
+        setCategories(response.data.categories);
+        // Initialize form data only after categories are loaded
+        if (response.data.categories.length > 0) {
+          setFormData({
+            name: "",
+            category: response.data.categories[0], // Set first category as default
+            price: "",
+            description: "",
+            dietary: [],
+            isVeg: false,
+            spiceLevel: "Medium",
+            popularity: [],
+            isAvailable: true,
+            image: "/api/placeholder/400/400",
+          });
+        }
         setError(null);
       } catch (err) {
-        setError("Failed to fetch menu items");
-        console.error("Error fetching menu items:", err);
-      } finally {
-        setLoading(false);
+        setError("Failed to fetch categories");
       }
     };
 
-    fetchMenuItems();
+    fetchCategories();
   }, []);
 
   const handleInputChange = (e) => {
@@ -148,7 +160,7 @@ const MenuManagement = () => {
         setError(null);
       } catch (err) {
         setError("Error processing image. Please try again.");
-        console.error("Error processing image:", err);
+        // console.error("Error processing image:", err);
       }
     }
   };
@@ -158,17 +170,32 @@ const MenuManagement = () => {
     setLoading(true);
     setError(null);
 
+    // Frontend validation
+    const requiredFields = {
+      name: "Name",
+      category: "Category",
+      price: "Price",
+      description: "Description",
+      spiceLevel: "Spice Level"
+    };
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(([key]) => !formData[key])
+      .map(([, label]) => label);
+
+    if (missingFields.length > 0) {
+      setError(`Required fields missing: ${missingFields.join(", ")}`);
+      setLoading(false);
+      return;
+    }
+
     try {
       // Validate image size after compression
       if (formData.image && formData.image.length > 1024 * 1024 * 2) {
-        // 2MB limit after compression
-        throw new Error(
-          "Compressed image is still too large. Please use a smaller image."
-        );
+        throw new Error("Compressed image is still too large. Please use a smaller image.");
       }
 
       if (selectedItem) {
-        // Update existing menu item
         const response = await api.put(
           `/api/v1/admin/menu/${selectedItem._id}`,
           formData
@@ -179,7 +206,6 @@ const MenuManagement = () => {
           )
         );
       } else {
-        // Add new menu item
         const response = await api.post("/api/v1/admin/menu", formData);
         setMenuItems((prev) => [...prev, response.data.menuItem]);
       }
@@ -192,11 +218,11 @@ const MenuManagement = () => {
           ? "Failed to update menu item"
           : "Failed to add menu item");
       setError(errorMessage);
-      console.error("Error submitting menu item:", err);
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleEdit = (item) => {
     setSelectedItem(item);
@@ -219,7 +245,7 @@ const MenuManagement = () => {
       setError(null);
     } catch (err) {
       setError("Failed to update item status");
-      console.error("Error toggling status:", err);
+      // console.error("Error toggling status:", err);
     }
   };
 
@@ -235,7 +261,7 @@ const MenuManagement = () => {
         setError(null);
       } catch (err) {
         setError("Failed to delete menu item");
-        console.error("Error deleting menu item:", err);
+        // console.error("Error deleting menu item:", err);
       }
     }
   };
@@ -259,7 +285,8 @@ const MenuManagement = () => {
       setCategories(response.data.categories);
     } catch (err) {
       // Properly extract the error message from the response
-      const errorMessage = err.response?.data?.error || "Failed to delete category";
+      const errorMessage =
+        err.response?.data?.error || "Failed to delete category";
       throw new Error(errorMessage);
     }
   };
@@ -267,7 +294,21 @@ const MenuManagement = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedItem(null);
-    setFormData(initialFormData);
+    // Reset form to initial state with first category
+    if (categories.length > 0) {
+      setFormData({
+        name: "",
+        category: categories[0],
+        price: "",
+        description: "",
+        dietary: [],
+        isVeg: false,
+        spiceLevel: "Medium",
+        popularity: [],
+        isAvailable: true,
+        image: "/api/placeholder/400/400",
+      });
+    }
     setPreviewImage(null);
   };
 
@@ -297,6 +338,74 @@ const MenuManagement = () => {
     }
   });
 
+  const getEmptyStateMessage = () => {
+    if (categories.length === 0) {
+      return (
+        <div className="text-center py-16 px-4">
+          <div className="max-w-md mx-auto">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              Welcome to Menu Management!
+            </h2>
+            <p className="text-gray-600 mb-8">
+              To get started with your menu, you'll need to:
+            </p>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <ol className="list-decimal list-inside text-left space-y-4">
+                <li className="text-gray-700">
+                  First, create some menu categories (e.g., Appetizers, Main
+                  Course, Desserts)
+                </li>
+                <li className="text-gray-700">
+                  Then add menu items to your categories
+                </li>
+              </ol>
+            </div>
+            <button
+              onClick={() => setIsCategoryModalOpen(true)}
+              className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Create Your First Category
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (menuItems.length === 0) {
+      return (
+        <div className="text-center py-16 px-4">
+          <div className="max-w-md mx-auto">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              Ready to Add Menu Items
+            </h2>
+            <p className="text-gray-600 mb-8">
+              You have categories set up. Now it's time to add some delicious
+              items to your menu!
+            </p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Add Your First Menu Item
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (searchTerm || activeFilter !== "all") {
+      return (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg">
+            No menu items found matching your criteria.
+          </p>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -321,25 +430,27 @@ const MenuManagement = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {!loading && filteredItems.length > 0
-            ? filteredItems.map((item) => (
-                <MenuItemCard
-                  key={item._id}
-                  item={item}
-                  onEdit={handleEdit}
-                  onToggleStatus={handleToggleStatus}
-                  onDelete={handleDelete}
-                />
-              ))
-            : !loading && (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500 text-lg">
-                    No menu items found matching your criteria.
-                  </p>
-                </div>
-              )}
-        </div>
+        {getEmptyStateMessage() || (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {!loading && filteredItems.length > 0
+              ? filteredItems.map((item) => (
+                  <MenuItemCard
+                    key={item._id}
+                    item={item}
+                    onEdit={handleEdit}
+                    onToggleStatus={handleToggleStatus}
+                    onDelete={handleDelete}
+                  />
+                ))
+              : !loading && (
+                  <div className="col-span-full text-center py-12">
+                    <p className="text-gray-500 text-lg">
+                      No menu items found matching your criteria.
+                    </p>
+                  </div>
+                )}
+          </div>
+        )}
 
         <CategoryDialog
           isOpen={isCategoryModalOpen}

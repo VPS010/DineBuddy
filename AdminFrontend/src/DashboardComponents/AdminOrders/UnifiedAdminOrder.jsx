@@ -9,6 +9,13 @@ import OrderTable from "./OrderTable";
 import OrderDetails from "./OrderDetails";
 import CreateOrder from "./CreateOrders";
 
+const EmptyState = ({ type, message }) => (
+  <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+    <h3 className="text-lg font-semibold text-gray-900 mb-2">{type}</h3>
+    <p className="text-gray-600 mb-4">{message}</p>
+  </div>
+);
+
 const UnifiedAdminOrder = () => {
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -570,14 +577,19 @@ const UnifiedAdminOrder = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        Loading...
+      <div className="min-h-screen bg-gray-100">
+        <header className="bg-white shadow-sm">
+          <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <h1 className="text-2xl font-bold text-gray-900">
+              Order Management
+            </h1>
+          </div>
+        </header>
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <p className="text-gray-600">Loading...</p>
+        </div>
       </div>
     );
-  }
-
-  if (error) {
-    return <div className="text-red-600 text-center p-4">{error}</div>;
   }
 
   return (
@@ -589,104 +601,137 @@ const UnifiedAdminOrder = () => {
       </header>
 
       <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <OrderStats
-          orders={dateFilteredOrders}
-          showRevenue={showRevenue}
-          setShowRevenue={setShowRevenue}
-          TAX_RATE={getCurrentTaxRate()} // Pass the tax rate function
-        />
+        {error === "Failed to fetch menu items" ? (
+          <EmptyState
+            type="No Menu Items Found"
+            message="You need to create menu items before you can manage orders. Please set up your menu first."
+          />
+        ) : error ? (
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <p className="text-red-600 text-center">{error}</p>
+          </div>
+        ) : (
+          <>
+            {orders.length >= 0 ? (
+              <>
+                <OrderStats
+                  orders={dateFilteredOrders}
+                  showRevenue={showRevenue}
+                  setShowRevenue={setShowRevenue}
+                  TAX_RATE={getCurrentTaxRate()}
+                />
 
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          {/* Search Bar */}
-          <div className="flex flex-wrap gap-4">
-            <input
-              type="text"
-              placeholder="Search orders..."
-              className="p-2 border rounded"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                  {/* Keep existing search, filter controls */}
+                  <div className="flex flex-wrap gap-4">
+                    <input
+                      type="text"
+                      placeholder="Search orders..."
+                      className="p-2 border rounded"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
 
-            {/* Time Filter Dropdown */}
-            <select
-              className="p-2 border rounded bg-white"
-              value={timeFilter}
-              onChange={(e) => setTimeFilter(e.target.value)}
-            >
-              <option value="today">Today</option>
-              <option value="yesterday">Yesterday</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="all">All Orders</option>
-            </select>
+                    <select
+                      className="p-2 border rounded bg-white"
+                      value={timeFilter}
+                      onChange={(e) => setTimeFilter(e.target.value)}
+                    >
+                      <option value="today">Today</option>
+                      <option value="yesterday">Yesterday</option>
+                      <option value="week">This Week</option>
+                      <option value="month">This Month</option>
+                      <option value="all">All Orders</option>
+                    </select>
 
-            {/* Status Filter Buttons */}
-            <div className="flex gap-2">
-              <Button
-                variant={statusFilter === "all" ? "default" : "ghost"}
-                onClick={() => setStatusFilter("all")}
-                className={`px-6 py-1 ${
-                  statusFilter === "all"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700"
-                }`}
-              >
-                All
-              </Button>
-              <Button
-                variant={statusFilter === "Unpaid" ? "default" : "ghost"}
-                onClick={() => setStatusFilter("Unpaid")}
-                className={`px-6 py-1 ${
-                  statusFilter === "Unpaid"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700"
-                }`}
-              >
-                Unpaid
-              </Button>
-              <Button
-                variant={statusFilter === "Paid" ? "default" : "ghost"}
-                onClick={() => setStatusFilter("Paid")}
-                className={`px-6 py-1 ${
-                  statusFilter === "Paid"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700"
-                }`}
-              >
-                Paid
-              </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={statusFilter === "all" ? "default" : "ghost"}
+                        onClick={() => setStatusFilter("all")}
+                        className={`px-6 py-1 ${
+                          statusFilter === "all"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        All
+                      </Button>
+                      <Button
+                        variant={
+                          statusFilter === "Unpaid" ? "default" : "ghost"
+                        }
+                        onClick={() => setStatusFilter("Unpaid")}
+                        className={`px-6 py-1 ${
+                          statusFilter === "Unpaid"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        Unpaid
+                      </Button>
+                      <Button
+                        variant={statusFilter === "Paid" ? "default" : "ghost"}
+                        onClick={() => setStatusFilter("Paid")}
+                        className={`px-6 py-1 ${
+                          statusFilter === "Paid"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        Paid
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    onClick={handleAddOrderClick}
+                    className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                  >
+                    <Plus /> Add Order
+                  </Button>
+                </div>
+
+                {filteredOrders.length > 0 ? (
+                  <OrderTable
+                    filteredOrders={filteredOrders}
+                    calculateTotalWithTax={calculateTotalWithTax}
+                    handleMarkAsCompleted={handleMarkAsCompleted}
+                    handleCheckout={handleCheckout}
+                    setExpandedOrder={setExpandedOrder}
+                    handleDeleteOrder={handleDeleteOrder}
+                  />
+                ) : (
+                  <EmptyState
+                    type="No Matching Orders"
+                    message="No orders match your current filters. Try adjusting your search or filter criteria."
+                  />
+                )}
+              </>
+            ) : (
+              <EmptyState
+                type="No Orders Yet"
+                message="You haven't received any orders yet. Create your first order or wait for customers to place orders."
+                actionText="Create Order"
+                onAction={handleAddOrderClick}
+              />
+            )}
+
+            {/* Keep existing bottom section */}
+            <div className="mt-6 flex gap-4">
+              {orders.length > 0 && (
+                <Button
+                  variant="ghost"
+                  onClick={handleExportOrders}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Export Orders
+                </Button>
+              )}
             </div>
-          </div>
-          <div className="flex justify-end items-center mr-0">
-            {/*add order button*/}
-            <Button
-              variant="primary"
-              onClick={handleAddOrderClick}
-              className="bg-blue-600 ml-auto mr-4 flex hover:bg-blue-700 border shadow-md text-white"
-            >
-              <Plus /> Add Order
-            </Button>
-          </div>
-        </div>
+          </>
+        )}
 
-        <OrderTable
-          filteredOrders={filteredOrders}
-          calculateTotalWithTax={calculateTotalWithTax}
-          handleMarkAsCompleted={handleMarkAsCompleted}
-          handleCheckout={handleCheckout}
-          setExpandedOrder={setExpandedOrder}
-          handleDeleteOrder={handleDeleteOrder}
-        />
-
-        <div className="mt-6 flex gap-4">
-          <Button
-            variant="ghost"
-            onClick={handleExportOrders}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            Export Orders
-          </Button>
-        </div>
         <ToastContainer
           position="top-right"
           autoClose={3000}
@@ -698,6 +743,8 @@ const UnifiedAdminOrder = () => {
           draggable
           pauseOnHover
         />
+
+        {/* Keep existing modal components */}
         {expandedOrder && restaurantInfo && (
           <OrderDetails
             expandedOrder={expandedOrder}
@@ -712,11 +759,12 @@ const UnifiedAdminOrder = () => {
             restaurantInfo={restaurantInfo}
             calculateSubtotal={calculateSubtotal}
             calculateTax={calculateTax}
-            TAX_RATE={getCurrentTaxRate()} // Pass the tax rate function
+            TAX_RATE={getCurrentTaxRate()}
             printRef={printRef}
             availableMenuItems={menuItems}
           />
         )}
+
         {showCreateOrder && (
           <CreateOrder
             onClose={() => setShowCreateOrder(false)}

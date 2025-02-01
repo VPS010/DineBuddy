@@ -438,9 +438,13 @@ const addMenuItem = async (req, res) => {
 
         // Check for required fields
         if (!name || !description || !price || !category || typeof isVeg === 'undefined' || !spiceLevel) {
+            console.log('req.body:', req.body);
             return res.status(400).json({
                 error: 'Name, description, price, category, isVeg, and spiceLevel are required fields.',
+
+
             });
+            
         }
 
         // Validate spice level
