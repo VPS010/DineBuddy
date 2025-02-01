@@ -178,7 +178,7 @@ const Cart = ({
 
   useEffect(() => {
     fetchOrderedItems();
-    const intervalId = setInterval(fetchOrderedItems, 30000);
+    const intervalId = setInterval(fetchOrderedItems, 3000);
     return () => clearInterval(intervalId);
   }, [tableNumber, restaurantId]);
 

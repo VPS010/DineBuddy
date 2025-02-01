@@ -2,9 +2,8 @@ import { useState } from "react";
 import { Button } from "../components/Button";
 import { InputBox } from "../components/InputBox";
 import { WarningLink } from "../components/WarningLink";
-import axios from 'axios';
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
-
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -22,7 +21,6 @@ const AdminLogin = () => {
     }));
   };
 
-  
   const LoginHandler = (e) => {
     e.preventDefault();
 
@@ -43,7 +41,10 @@ const AdminLogin = () => {
         });
       })
       .catch((error) => {
-        console.log("Login error:", error.response?.data?.error || error.message);
+        console.log(
+          "Login error:",
+          error.response?.data?.error || error.message
+        );
         alert("Invalid email or password.");
       });
   };
@@ -52,9 +53,9 @@ const AdminLogin = () => {
     <>
       <section className="flex bg-gray-50 align-middle items-center justify-center  ">
         <div className="ml-52 mr-0 hidden md:block">
-        <img
+          <img
             src="/herosec.png"
-            className="h-[400px] w-[400px] mt-0 rounded-md  m-8"
+            className="h-[400px] w-[500px] mt-0 rounded-md  m-8"
             alt=""
           />
         </div>
@@ -64,8 +65,8 @@ const AdminLogin = () => {
               href="./Login.jsx"
               className="flex items-center mb-6 text-2xl font-semibold text-gray-900 "
             >
-             <p className="text-7xl font-mono text-center flex flex-col sm:text-left font-extrabold text-stone-800 md:text-5xl">
-                SERVIT
+              <p className="text-7xl font-mono text-center flex flex-col sm:text-left font-extrabold text-stone-800 md:text-5xl">
+                DineBuddy
               </p>
             </a>
             <div className="w-full bg-stone-100 rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0">

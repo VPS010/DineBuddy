@@ -70,7 +70,7 @@ const AdminSignup = () => {
         <div className="ml-52 mr-0 hidden md:block">
           <img
             src="/herosec.png"
-            className="h-[400px] w-[400px] mt-0 rounded-md  m-8"
+            className="h-[400px] w-[500px] mt-0 rounded-md  m-8"
             alt=""
           />
         </div>
@@ -81,7 +81,7 @@ const AdminSignup = () => {
               className="flex items-center mb-6 text-2xl font-semibold text-gray-900 "
             >
               <p className="text-7xl font-mono text-center flex flex-col sm:text-left font-extrabold text-stone-800 md:text-5xl">
-                SERVIT
+                DineBuddy
               </p>
             </a>
             <div className="w-full bg-stone-100 rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0">

@@ -81,7 +81,7 @@ const KitchenScreen = () => {
   useEffect(() => {
     const pollInterval = setInterval(() => {
       fetchOrders(false);
-    }, 5000);
+    }, 2000);
 
     return () => clearInterval(pollInterval);
   }, []);

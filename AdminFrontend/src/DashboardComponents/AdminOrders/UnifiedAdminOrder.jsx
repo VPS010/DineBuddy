@@ -162,7 +162,7 @@ const UnifiedAdminOrder = () => {
     const startPolling = () => {
       pollingIntervalRef.current = setInterval(() => {
         fetchOrders();
-      }, 5000); // 5 seconds
+      }, 3000);
     };
 
     // Start polling when component mounts
@@ -497,7 +497,7 @@ const UnifiedAdminOrder = () => {
       }
     } catch (error) {
       console.error("Error deleting order:", error);
-      alert(
+      console.log(
         "Failed to delete order: " +
           (error.response?.data?.error || error.message)
       );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Menu,
   Bell,
@@ -19,15 +19,47 @@ import KitchenScreen from "../DashboardComponents/KitchenScreen";
 import QRCodeGenerator from "../DashboardComponents/QRgenerator/QRCodeGenerator";
 import SettingsPage from "../DashboardComponents/Settings/Settings";
 import UnifiedAdminOrder from "../DashboardComponents/AdminOrders/UnifiedAdminOrder";
+import HeaderRight from "../components/HeaderRight";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('authorization');
+    setIsAuthenticated(token);
+  }, []);
 
   const NavbarHandle = (id) => {
     setActiveSection(id);
   };
+
+  const handleLogin = () => {
+    navigate('/admin/login');
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg p-8 max-w-md w-full shadow-xl">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Unauthorized Access</h2>
+            <p className="text-gray-600 mb-6">
+              You need to be logged in to access the dashboard. Please sign in with your credentials to continue.
+            </p>
+            <button
+              onClick={handleLogin}
+              className="w-full bg-emerald-600 text-white py-2 px-4 rounded-md hover:bg-emerald-700 transition-colors duration-200 font-medium"
+            >
+              Log In
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -85,8 +117,7 @@ const DashboardPage = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-
-        <header className="bg-white  shadow-sm">
+        <header className="bg-white shadow-sm">
           <div className="flex items-center justify-between p-4">
             <div className="flex justify-between">
               <div>
@@ -108,21 +139,7 @@ const DashboardPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-                <Bell size={20} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-
-              <div className="flex items-center gap-2">
-                <img
-                  src="/api/placeholder/32/32"
-                  alt="Admin"
-                  className="w-8 h-8 rounded-full"
-                />
-                <ChevronDown size={16} className="text-gray-600" />
-              </div>
-            </div>
+            <HeaderRight />
           </div>
         </header>
 
