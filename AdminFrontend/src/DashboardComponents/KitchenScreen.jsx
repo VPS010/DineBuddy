@@ -32,7 +32,7 @@ const KitchenScreen = () => {
 
       if (response.data.success) {
         setOrders(response.data.data);
-        console.log(response.data.data);
+        // console.log(response.data.data);
         setError(null);
       } else {
         setError("Failed to fetch orders");

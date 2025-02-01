@@ -1,5 +1,10 @@
-import { motion, useAnimation, AnimatePresence, useInView } from "framer-motion";
-import React, { useRef,useState, useEffect } from "react";
+import {
+  motion,
+  useAnimation,
+  AnimatePresence,
+  useInView,
+} from "framer-motion";
+import React, { useRef, useState, useEffect } from "react";
 import { useInView as useScrollInView } from "react-intersection-observer";
 import { useNavigate } from "react-router-dom";
 import {
@@ -10,12 +15,12 @@ import {
   Camera,
   Sparkles,
   Utensils,
+  Mail,
   BookUser,
   Gem,
   ChevronRight,
   CheckCircle,
   ArrowRight,
-  Mail,
   Facebook,
   Twitter,
   Instagram,
@@ -23,26 +28,29 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+const LandingPage = () => {
+  const [isHeroLoaded, setIsHeroLoaded] = useState(false);
+  const navigate = useNavigate();
 
-  const LandingPage = () => {
-    const [isHeroLoaded, setIsHeroLoaded] = useState(false);
-    const navigate = useNavigate();
-  
-    useEffect(() => {
-      const loadImage = async () => {
-        const img = new Image();
-        img.src = "https://i.ibb.co/jPYGBXs5/pngtree-sophisticated-bar-and-restaurant-boasting-luxurious-modern-design-featuring-elegant-furnishi.png";
-        img.onload = () => setIsHeroLoaded(true);
-        img.onerror = () => setIsHeroLoaded(true); // Fallback if image fails to load
-      };
-  
-      loadImage();
-    }, []);
+  useEffect(() => {
+    const loadImage = async () => {
+      const img = new Image();
+      img.src =
+        "https://i.ibb.co/jPYGBXs5/pngtree-sophisticated-bar-and-restaurant-boasting-luxurious-modern-design-featuring-elegant-furnishi.png";
+      img.onload = () => setIsHeroLoaded(true);
+      img.onerror = () => setIsHeroLoaded(true); // Fallback if image fails to load
+    };
+
+    loadImage();
+  }, []);
+
+  const handleEmailClick = () => {
+    window.location.href = "mailto:hellodinebuddy@gmail.com";
+  };
 
   return (
     <div className="font-sans bg-beige-50">
-
-<AnimatePresence>
+      <AnimatePresence>
         {!isHeroLoaded && (
           <motion.div
             key="loader"
@@ -376,7 +384,18 @@ import {
           <h2 className="text-4xl font-bold text-center mb-12 text-deep-green">
             Simple, Affordable Pricing
           </h2>
-
+          <motion.div
+            animate={{ scale: [1, 1.02, 1] }}
+            transition={{ repeat: Infinity, duration: 3 }}
+            className="text-center mt-8 mb-12"
+          >
+            <button className="bg-maroon text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg flex items-center gap-2 mx-auto">
+              <Sparkles className="w-6 h-6" />
+              Currently the Site is Still Under Development and only a MVP is
+              released, Therefore you can Try all our available Services for
+              Free
+            </button>
+          </motion.div>
           <div className="grid md:grid-cols-3 gap-8 px-4">
             {[
               {
@@ -468,22 +487,9 @@ import {
               </motion.div>
             ))}
           </div>
-
-          <motion.div
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="text-center mt-12"
-          >
-            <button className="bg-maroon text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg flex items-center gap-2 mx-auto">
-              <Sparkles className="w-6 h-6" />
-              Currently the Site is Still Under Development and only  a MVP is released, Therefore you can
-              Try all our available Services for Free
-            </button>
-          </motion.div>
         </div>
       </SectionWrapper>
 
-      {/* Footer */}
       <footer className="bg-deep-green text-white py-20 px-4">
         <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-8">
           <div className="space-y-4">
@@ -512,6 +518,7 @@ import {
                   <ChevronRight size={16} className="text-gold" />
                   {link}
                 </motion.div>
+                
               )
             )}
           </div>
@@ -530,7 +537,15 @@ import {
               >
                 <ArrowRight size={20} />
               </motion.button>
+              
             </form>
+            <motion.div
+                whileHover={{ y: -3 }}
+                onClick={handleEmailClick}
+                className="cursor-pointer flex"
+              >
+                <Mail className="text-gold hover:text-beige-100 mx-2" />hellodinebuddy@gmail.com
+              </motion.div>
           </div>
         </div>
       </footer>

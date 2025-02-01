@@ -150,7 +150,7 @@ const UnifiedAdminOrder = () => {
       }));
 
       setOrders(formattedOrders);
-      console.log(formattedOrders);
+      // console.log(formattedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
       setError("Failed to load orders");
@@ -497,10 +497,10 @@ const UnifiedAdminOrder = () => {
       }
     } catch (error) {
       console.error("Error deleting order:", error);
-      console.log(
-        "Failed to delete order: " +
-          (error.response?.data?.error || error.message)
-      );
+      // console.log(
+      //   "Failed to delete order: " +
+      //     (error.response?.data?.error || error.message)
+      // );
     }
   };
 
