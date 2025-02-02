@@ -101,7 +101,7 @@ const Dashboard = () => {
           <div className="bg-yellow-100 border-b border-yellow-200 p-2 text-yellow-800 flex justify-between items-center">
             <span className="flex items-center">
               <Construction className="w-4 h-4 mr-2" />
-              Dashboard is under development, This is Just a Sample Design of our  Dashboard
+              Dashboard is under development, This is Just a Static Design of our  Dashboard
             </span>
             <button
               onClick={handleToggleOverlay}

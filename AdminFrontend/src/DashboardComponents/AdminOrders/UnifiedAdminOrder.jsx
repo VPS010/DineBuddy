@@ -26,7 +26,7 @@ const UnifiedAdminOrder = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [showRevenue, setShowRevenue] = useState(true);
   const [timeFilter, setTimeFilter] = useState("today");
-  const [statusFilter, setStatusFilter] = useState("Unpaid");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [menuItems, setMenuItems] = useState([]);
 
@@ -34,37 +34,45 @@ const UnifiedAdminOrder = () => {
   const pollingIntervalRef = useRef(null);
 
   // Helper function to check if a date falls within the selected time range
-  const isDateInRange = (date) => {
-    const orderDate = new Date(date);
+  const isDateInRange = (dateStr) => {
+    const orderDate = new Date(dateStr);
     const now = new Date();
 
-    if (timeFilter === "today") {
-      const startOfDay = new Date(now);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(now);
-      endOfDay.setHours(23, 59, 59, 999);
-      return orderDate >= startOfDay && orderDate <= endOfDay;
-    } else if (timeFilter === "yesterday") {
-      const startOfYesterday = new Date(now);
-      startOfYesterday.setDate(now.getDate() - 1);
-      startOfYesterday.setHours(0, 0, 0, 0);
-      const endOfYesterday = new Date(now);
-      endOfYesterday.setDate(now.getDate() - 1);
-      endOfYesterday.setHours(23, 59, 59, 999);
-      return orderDate >= startOfYesterday && orderDate <= endOfYesterday;
-    } else if (timeFilter === "week") {
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-      startOfWeek.setHours(0, 0, 0, 0);
-      return orderDate >= startOfWeek;
-    } else if (timeFilter === "month") {
-      const startOfMonth = new Date(now);
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      return orderDate >= startOfMonth;
+    // Reset time part of now to start of day
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    switch (timeFilter) {
+      case "today": {
+        const startOfDay = today;
+        const endOfDay = new Date(today);
+        endOfDay.setHours(23, 59, 59, 999);
+        return orderDate >= startOfDay && orderDate <= endOfDay;
+      }
+      case "yesterday": {
+        const startOfYesterday = new Date(today);
+        startOfYesterday.setDate(today.getDate() - 1);
+        const endOfYesterday = new Date(startOfYesterday);
+        endOfYesterday.setHours(23, 59, 59, 999);
+        return orderDate >= startOfYesterday && orderDate <= endOfYesterday;
+      }
+      case "week": {
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay()); // Start from Sunday
+        startOfWeek.setHours(0, 0, 0, 0);
+        return orderDate >= startOfWeek;
+      }
+      case "month": {
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        return orderDate >= startOfMonth;
+      }
+      case "all":
+        return true;
+      default:
+        return true;
     }
-    return true; // For "all" time filter
   };
+
   useEffect(() => {
     const fetchMenuItems = async () => {
       setLoading(true);
@@ -202,7 +210,16 @@ const UnifiedAdminOrder = () => {
 
   // Get orders filtered by date range
   const getDateFilteredOrders = () => {
-    return orders.filter((order) => isDateInRange(order.createdAt));
+    return orders.filter((order) => {
+      // Add console.log for debugging
+      const isInRange = isDateInRange(order.createdAt);
+      // console.log("Order:", {
+      //   date: new Date(order.createdAt),
+      //   timeFilter,
+      //   isInRange,
+      // });
+      return isInRange;
+    });
   };
 
   // Get orders filtered by both date and payment status
@@ -522,33 +539,79 @@ const UnifiedAdminOrder = () => {
   };
 
   const handleExportOrders = () => {
+    // Get date filtered orders
+    const dateFiltered = getDateFilteredOrders();
+    
+    // Filter for only paid orders
+    const paidOrders = dateFiltered.filter(order => order.paymentStatus === "Paid");
+  
+    // Sort orders by date (most recent first)
+    const sortedOrders = paidOrders.sort((a, b) => 
+      new Date(b.createdAt) - new Date(a.createdAt)
+    );
+  
+    // Define headers with more detailed information
     const headers = [
+      "Date",
+      "Time",
       "Order ID",
-      "Table",
-      "Customer",
-      "Status",
-      "Amount",
-      "Created At",
+      "Customer Name",
+      "Table/Parcel",
+      "Items",
+      "Subtotal",
+      "Tax",
+      "Total Amount",
+      "Payment Status"
     ];
+  
+    // Create CSV data with formatted values
     const csvData = [
       headers.join(","),
-      ...orders.map((order) =>
-        [
+      ...sortedOrders.map(order => {
+        const date = new Date(order.createdAt);
+        const formattedDate = date.toLocaleDateString();
+        const formattedTime = date.toLocaleTimeString();
+        
+        // Format table/parcel display
+        const tableDisplay = order.type === "Parcel" 
+          ? "Parcel" 
+          : `T-${order.tableNumber}`;
+  
+        // Calculate financial values
+        const subtotal = calculateSubtotal(order.items);
+        const tax = calculateTax(subtotal);
+        const total = subtotal + tax;
+  
+        // Format items list
+        const itemsList = order.items
+          .map(item => `${item.quantity}x ${item.name}`)
+          .join("; ");
+  
+        return [
+          formattedDate,
+          formattedTime,
           order.id,
-          order.tableNumber,
-          order.customerName,
-          order.status,
-          order.amount.toFixed(2),
-          new Date(order.createdAt).toLocaleString(),
-        ].join(",")
-      ),
+          order.customerName || "N/A",
+          tableDisplay,
+          `"${itemsList}"`, // Quote items list to handle commas
+          subtotal.toFixed(2),
+          tax.toFixed(2),
+          total.toFixed(2),
+          order.paymentStatus
+        ].join(",");
+      })
     ].join("\n");
-
+  
+    // Generate filename with current date
+    const currentDate = new Date().toISOString().split('T')[0];
+    const filename = `orders_export_${currentDate}.csv`;
+  
+    // Create and trigger download
     const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", "orders.csv");
+    link.setAttribute("download", filename);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();

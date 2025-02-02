@@ -13,19 +13,60 @@ const AdminLogin = () => {
     password: "",
   });
 
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+  });
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      return "Email is required";
+    }
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address";
+    }
+    return "";
+  };
+
+  const validatePassword = (password) => {
+    if (!password) {
+      return "Password is required";
+    }
+    if (password.length < 8) {
+      return "Password must be at least 6 characters long";
+    }
+    return "";
+  };
+
   const inputHandler = (e) => {
     const { name, value } = e.target;
     setUser((prevUser) => ({
       ...prevUser,
       [name]: value,
     }));
+
+    // Clear errors when user starts typing
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      [name]: "",
+    }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {
+      email: validateEmail(user.email),
+      password: validatePassword(user.password),
+    };
+
+    setErrors(newErrors);
+    return !Object.values(newErrors).some(error => error !== "");
   };
 
   const loginHandler = (e) => {
     e.preventDefault();
 
-    if (!user.email || !user.password) {
-      alert("Email and password are required.");
+    if (!validateForm()) {
       return;
     }
 
@@ -75,27 +116,42 @@ const AdminLogin = () => {
               <form
                 className="space-y-4 md:space-y-6 text-left"
                 onSubmit={loginHandler}
+                noValidate
               >
-                <InputBox
-                  label="Your email"
-                  iname="email"
-                  id="admin-email"
-                  type="email"
-                  placeholder="name@company.com"
-                  onChange={inputHandler}
-                  value={user.email}
-                  required
-                />
-                <InputBox
-                  label="Password"
-                  iname="password"
-                  id="admin-password"
-                  type="password"
-                  placeholder="••••••••"
-                  onChange={inputHandler}
-                  value={user.password}
-                  required
-                />
+                <div>
+                  <InputBox
+                    label="Your email"
+                    iname="email"
+                    id="admin-email"
+                    type="email"
+                    placeholder="name@company.com"
+                    onChange={inputHandler}
+                    value={user.email}
+                    required
+                  />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.email}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <InputBox
+                    label="Password"
+                    iname="password"
+                    id="admin-password"
+                    type="password"
+                    placeholder="••••••••"
+                    onChange={inputHandler}
+                    value={user.password}
+                    required
+                  />
+                  {errors.password && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-start">
                     <div className="flex items-center h-5">

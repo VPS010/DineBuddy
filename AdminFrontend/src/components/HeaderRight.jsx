@@ -4,13 +4,59 @@ import { Bell, ChevronDown, LogOut } from "lucide-react";
 
 const HeaderRight = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [unpaidOrders, setUnpaidOrders] = useState(0);
+  const [previousOrderCount, setPreviousOrderCount] = useState(0);
   const dropdownRef = useRef(null);
+  const [audio] = useState(new Audio("/notification-alert-269289.mp3")); // Create audio instance once
   const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
   };
+
+  const playNotificationSound = async () => {
+    try {
+      // Reset audio to start
+      audio.currentTime = 0;
+      await audio.play();
+    } catch (error) {
+      console.error("Error playing notification sound:", error);
+    }
+  };
+
+  // Fetch unpaid orders
+  useEffect(() => {
+    const fetchUnpaidOrders = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/api/v1/admin/orders", {
+          headers: {
+            Authorization: localStorage.getItem("authorization"),
+          },
+        });
+        const data = await response.json();
+        const unpaidCount = data.data.filter(order => order.paymentStatus === "Unpaid").length;
+        
+        // Play sound if new unpaid orders arrived
+        if (unpaidCount > previousOrderCount) {
+          playNotificationSound();
+        }
+        
+        setPreviousOrderCount(unpaidCount);
+        setUnpaidOrders(unpaidCount);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      }
+    };
+
+    // Initial fetch
+    fetchUnpaidOrders();
+
+    // Set up polling interval
+    const interval = setInterval(fetchUnpaidOrders, 3000);
+
+    return () => clearInterval(interval);
+  }, [previousOrderCount, audio]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -28,7 +74,11 @@ const HeaderRight = () => {
     <div className="flex items-center gap-4">
       <button className="relative p-2 hover:bg-gray-100 rounded-lg">
         <Bell size={20} />
-        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+        {unpaidOrders > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            {unpaidOrders}
+          </span>
+        )}
       </button>
 
       <div className="relative" ref={dropdownRef}>

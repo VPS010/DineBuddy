@@ -65,34 +65,25 @@ const MenuManagement = () => {
   }, []);
 
   // Fetch menu items
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await api.get("/api/v1/admin/menu/categories");
-        setCategories(response.data.categories);
-        // Initialize form data only after categories are loaded
-        if (response.data.categories.length > 0) {
-          setFormData({
-            name: "",
-            category: response.data.categories[0], // Set first category as default
-            price: "",
-            description: "",
-            dietary: [],
-            isVeg: false,
-            spiceLevel: "Medium",
-            popularity: [],
-            isAvailable: true,
-            image: "/api/placeholder/400/400",
-          });
-        }
-        setError(null);
-      } catch (err) {
-        setError("Failed to fetch categories");
-      }
-    };
+// Fetch menu items
+useEffect(() => {
+  const fetchMenuItems = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get("/api/v1/admin/menu");
+      setMenuItems(response.data.menuItems);
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch menu items");
+      console.error("Error fetching menu items:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchCategories();
-  }, []);
+  fetchMenuItems();
+}, []);
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

@@ -76,7 +76,7 @@ const loginAdmin = async (req, res) => {
         }
 
         const admin = await Admin.findOne({
-            username: req.body.username,
+            email: req.body.email,
             password: req.body.password
         })
 
