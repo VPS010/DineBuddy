@@ -83,7 +83,6 @@ const LandingPage = () => {
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         {/* Background with parallax effect */}
-
         <motion.div
           initial={{ scale: 1.1 }}
           animate={{ scale: 1 }}
@@ -99,22 +98,22 @@ const LandingPage = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.3 }}
-          className="relative text-center px-4 space-y-8 max-w-7xl mx-auto"
+          className="relative text-center px-4 space-y-8 max-w-7xl mx-auto w-full"
         >
           {/* Animated decorative elements */}
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-20 -left-20 w-48 h-48 bg-green-700/20 rounded-full blur-xl"
+            className="absolute md:-top-20 md:-left-20 -top-10 -left-10 w-32 h-32 md:w-48 md:h-48 bg-green-700/20 rounded-full blur-xl"
           />
           <div>
-            <div className="space-y-8">
-              <h1 className="sm:text-5xl md:text-6xl  lg:text-7xl font-bold text-white drop-shadow-2xl px-4 leading-tight">
-                <p className="bg-gradient-to-r text-5xl md:text-6xl  lg:text-7xl from-green-600 to-green-500 bg-clip-text text-transparent">
+            <div className="space-y-4 md:space-y-8">
+              <h1 className="text-4xl xs:text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white drop-shadow-2xl px-4 leading-tight">
+                <p className="bg-gradient-to-r text-5xl xs:text-5xl sm:text-5xl md:text-6xl lg:text-7xl from-green-600 to-green-500 bg-clip-text text-transparent">
                   DineBuddy
                 </p>
                 <br />
-                <p className="font-serif font-thin md:font-bold text-4xl md:text-6xl lg:text-7xl">
+                <p className="font-serif font-thin md:font-bold text-2xl xs:text-3xl sm:text-4xl md:text-6xl lg:text-7xl">
                   Your Personal Digital Waiter
                 </p>
               </h1>
@@ -123,16 +122,16 @@ const LandingPage = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="text-2xl md:text-3xl text-white max-w-5xl mx-auto font-light tracking-wide"
+                className="text-lg md:text-3xl text-white max-w-5xl mx-auto font-light tracking-wide px-2"
               >
                 Effortless Ordering & Dining – No More Waiting, Just Enjoy Your
                 Meal.
               </motion.p>
             </div>
             {/* CTA Buttons Container */}
-            <div className="space-y-4 md:mt-20">
+            <div className="space-y-4 md:mt-20 mt-12">
               <motion.div
-                className="flex flex-col md:flex-row gap-4 justify-center"
+                className="flex flex-col md:flex-row gap-4 justify-center px-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7 }}
@@ -145,11 +144,11 @@ const LandingPage = () => {
                   }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setIsQRScannerOpen(true)}
-                  className="bg-green-800 mt-2 md:mt-0 text-white px-10 py-5 rounded-xl border-2 border-stone-100 text-xl font-semibold shadow-2xl flex items-center gap-3 hover:border-gray-700 hover:bg-green-800 transition-colors"
+                  className="bg-green-800 text-white px-6 py-4 md:px-10 md:py-5 rounded-xl border-2 border-stone-100 text-lg md:text-xl font-semibold shadow-2xl flex items-center gap-3 justify-center hover:border-gray-700 hover:bg-green-800 transition-colors"
                 >
-                  <QrCode size={28} className="shrink-0" />
+                  <QrCode size={24} className="shrink-0" />
                   <span>Scan QR to Order</span>
-                  <ChevronRight size={20} className="ml-1" />
+                  <ChevronRight size={18} className="ml-1" />
                 </motion.button>
 
                 {/* Secondary CTA */}
@@ -158,12 +157,12 @@ const LandingPage = () => {
                     scale: 1.05,
                     backgroundColor: "gray-700",
                   }}
-                  className="bg-gold text-white px-10 py-5 rounded-xl text-xl font-semibold border-2 border-stone-100 hover:border-gray-700 flex items-center gap-2"
+                  className="bg-gold text-white px-6 py-4 md:px-10 md:py-5 rounded-xl text-lg md:text-xl font-semibold border-2 border-stone-100 hover:border-gray-700 flex items-center gap-2 justify-center"
                   onClick={() => {
                     navigate("/admin/login");
                   }}
                 >
-                  <Utensils size={24} />
+                  <Utensils size={20} />
                   Restaurant Login
                 </motion.button>
               </motion.div>
@@ -174,15 +173,24 @@ const LandingPage = () => {
           <motion.div
             animate={{ y: [0, 20, 0] }}
             transition={{ repeat: Infinity, duration: 2 }}
-            className="absolute  left-1/2 -translate-x-1/2"
+            className="absolute left-1/2 -translate-x-1/2 -bottom-16 md:-bottom-20"
+            onClick={() =>
+              document
+                .getElementById("features")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+            style={{ cursor: "pointer" }}
           >
-            <ChevronDown className="text-gold h-12 w-12" strokeWidth={1.5} />
+            <ChevronDown
+              className="text-gold h-12 w-12 md:h-12 md:w-12"
+              strokeWidth={1.5}
+            />
           </motion.div>
         </motion.div>
       </section>
 
       {/* Features Section */}
-      <SectionWrapper bgColor="bg-white">
+      <SectionWrapper bgColor="bg-white" id="features">
         <div className="max-w-7xl mx-auto px-4">
           {/* Section Header */}
           <motion.div
@@ -205,23 +213,23 @@ const LandingPage = () => {
             {[
               {
                 icon: <QrCode className="text-green-800" />,
-                title: "QR-Based Ordering",
-                desc: "Instant menu access with a simple scan",
+                title: "Instant Order Start",
+                desc: "Guests scan & order in 30 seconds - 70% faster than traditional menus",
               },
               {
                 icon: <Clock className="text-green-800" />,
                 title: "Live Order Symphony",
-                desc: "Live updates from kitchen to table",
+                desc: "Live updates from kitchen to table reduce cook time errors by 45%",
               },
               {
                 icon: <Star className="text-green-800" />,
-                title: "Smart Digital Menu",
-                desc: "Curated recommendations at your fingertips",
+                title: "Dynamic Menu Engine",
+                desc: "Update specials instantly across all tables - sell 30% more high-margin items",
               },
               {
                 icon: <Wallet className="text-green-800" />,
-                title: "Secure Payments",
-                desc: "Multiple payment options in one tap",
+                title: "Frictionless Payments",
+                desc: "Split bills & pay in 1 tap - 62% fewer payment-related staff calls",
               },
             ].map((feature, idx) => (
               <motion.div
@@ -345,7 +353,7 @@ const LandingPage = () => {
         </div>
       </SectionWrapper>
 
-      <div className="md:px-44 px-4">
+      <div className="md:px-20 px-4">
         {" "}
         {/* Comfort Guarantee CTA */}
         <motion.div
@@ -353,15 +361,15 @@ const LandingPage = () => {
           initial={{ scale: 0.98 }}
           whileInView={{ scale: 1 }}
         >
-          <div className="md:flex justify-between gap-x-5 mx-auto">
+          <div className="md:flex justify-between items-center gap-x-5 mx-auto">
             <div>
-              <p className="text-gray-100 mb-2">
+              <p className="text-gray-100 text-xl mb-2">
                 Restaurants using DineBuddy report 4.8/5 comfort scores from
                 diners.
               </p>
               <span className="block mt-2 text-xl text-gold">
-                "Finally, technology that disappears – leaving just great food
-                and conversation."
+                "Finally, technology that disappears – leaving your customers
+                with a seamless and enjoyable dining experience"
               </span>
             </div>
             <div>
@@ -544,7 +552,7 @@ const LandingPage = () => {
             <motion.div
               initial={{ opacity: 0, x: 0 }}
               whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1}}
+              transition={{ duration: 1 }}
               viewport={{ once: true }}
               className="w-full lg:w-1/2 flex justify-center"
             >
@@ -561,7 +569,7 @@ const LandingPage = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration:1 }}
+              transition={{ duration: 1 }}
               viewport={{ once: true }}
               className="w-full lg:w-1/2 max-w-xl"
             >
@@ -787,8 +795,8 @@ const LandingPage = () => {
 };
 
 // Reusable Components
-const SectionWrapper = ({ children, bgColor = "bg-white" }) => (
-  <section className={`py-20 px-4 ${bgColor}`}>
+const SectionWrapper = ({ children, bgColor = "bg-white", id }) => (
+  <section id={id} className={`py-20 px-4 ${bgColor}`}>
     <div className="max-w-6xl mx-auto">{children}</div>
   </section>
 );

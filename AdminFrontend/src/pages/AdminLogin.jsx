@@ -97,7 +97,7 @@ const AdminLogin = () => {
           {/* Form Card */}
           <div className="bg-stone-100 rounded-lg mx-2 shadow-md p-4">
             <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">
-              Sign in to your account
+              Login to your account
             </h2>
 
             <form className="space-y-3" onSubmit={loginHandler} noValidate>
