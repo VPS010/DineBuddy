@@ -1,4 +1,4 @@
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 
 import {
   X,
@@ -66,8 +66,8 @@ const Dashboard = () => {
   };
 
   const salesStats = {
-    totalSales: 8459.99,
-    avgOrderValue: 54.23,
+    totalSales: 388459.99,
+    avgOrderValue: 1504.23,
   };
 
   const feedback = {
@@ -192,13 +192,19 @@ const Dashboard = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Sales</span>
                   <span className="font-semibold flex">
-                    ₹{salesStats.totalSales.toLocaleString()}
+                    {salesStats.totalSales.toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "INR",
+                    })}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Avg. Order Value</span>
                   <span className="font-semibold flex">
-                    ₹{salesStats.avgOrderValue}
+                    {salesStats.avgOrderValue.toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "INR",
+                    })}
                   </span>
                 </div>
                 <div className="h-32">

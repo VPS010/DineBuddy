@@ -6,6 +6,7 @@ import {
 } from "framer-motion";
 import React, { useRef, useState, useEffect } from "react";
 import { useInView as useScrollInView } from "react-intersection-observer";
+import QRScannerModal from "../components/QrScannnerModle";
 import { useNavigate } from "react-router-dom";
 import {
   QrCode,
@@ -30,6 +31,7 @@ import {
 
 const LandingPage = () => {
   const [isHeroLoaded, setIsHeroLoaded] = useState(false);
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,12 +46,23 @@ const LandingPage = () => {
     loadImage();
   }, []);
 
+  const handleScanComplete = (result) => {
+    setIsQRScannerOpen(false);
+    // Check if the result is a valid URL
+    try {
+      new URL(result);
+      window.location.href = result;
+    } catch {
+      alert("Invalid QR code. Please scan a valid URL.");
+    }
+  };
+
   const handleEmailClick = () => {
     window.location.href = "mailto:hellodinebuddy@gmail.com";
   };
 
   return (
-    <div className="font-sans bg-beige-50">
+    <div className="font-sans justify-center flex flex-col bg-beige-50">
       <AnimatePresence>
         {!isHeroLoaded && (
           <motion.div
@@ -96,19 +109,21 @@ const LandingPage = () => {
           />
           <div>
             <div className="space-y-8">
-              <h1 className="text-4xl md:text-6xl  lg:text-7xl font-bold text-white drop-shadow-2xl px-4 leading-tight">
-                <span className="bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">
+              <h1 className="sm:text-5xl md:text-6xl  lg:text-7xl font-bold text-white drop-shadow-2xl px-4 leading-tight">
+                <p className="bg-gradient-to-r text-5xl md:text-6xl  lg:text-7xl from-green-600 to-green-500 bg-clip-text text-transparent">
                   DineBuddy
-                </span>
+                </p>
                 <br />
-                <span className="font-serif">Your Personal Digital Waiter</span>
+                <p className="font-serif font-thin md:font-bold text-4xl md:text-6xl lg:text-7xl">
+                  Your Personal Digital Waiter
+                </p>
               </h1>
 
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="text-xl md:text-3xl text-white max-w-5xl mx-auto font-light tracking-wide"
+                className="text-2xl md:text-3xl text-white max-w-5xl mx-auto font-light tracking-wide"
               >
                 Effortless Ordering & Dining – No More Waiting, Just Enjoy Your
                 Meal.
@@ -129,7 +144,8 @@ const LandingPage = () => {
                     boxShadow: "0 10px 20px rgba(0,0,0,0.15)",
                   }}
                   whileTap={{ scale: 0.95 }}
-                  className=" bg-green-800 text-white  px-10 py-5 rounded-xl border-2 border-stone-100 text-xl font-semibold shadow-2xl flex items-center gap-3 hover:border-gray-700 hover:bg-green-800 transition-colors"
+                  onClick={() => setIsQRScannerOpen(true)}
+                  className="bg-green-800 mt-2 md:mt-0 text-white px-10 py-5 rounded-xl border-2 border-stone-100 text-xl font-semibold shadow-2xl flex items-center gap-3 hover:border-gray-700 hover:bg-green-800 transition-colors"
                 >
                   <QrCode size={28} className="shrink-0" />
                   <span>Scan QR to Order</span>
@@ -158,7 +174,7 @@ const LandingPage = () => {
           <motion.div
             animate={{ y: [0, 20, 0] }}
             transition={{ repeat: Infinity, duration: 2 }}
-            className="absolute left-1/2 -translate-x-1/2"
+            className="absolute  left-1/2 -translate-x-1/2"
           >
             <ChevronDown className="text-gold h-12 w-12" strokeWidth={1.5} />
           </motion.div>
@@ -194,12 +210,12 @@ const LandingPage = () => {
               },
               {
                 icon: <Clock className="text-green-800" />,
-                title: "Real-Time Tracking",
+                title: "Live Order Symphony",
                 desc: "Live updates from kitchen to table",
               },
               {
                 icon: <Star className="text-green-800" />,
-                title: "Menu Highlights",
+                title: "Smart Digital Menu",
                 desc: "Curated recommendations at your fingertips",
               },
               {
@@ -240,74 +256,8 @@ const LandingPage = () => {
           </div>
         </div>
       </SectionWrapper>
-
-      {/* Restaurant Benefits */}
+      {/* Effortless Experience Section */}
       <SectionWrapper bgColor="bg-green-50">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12 items-center px-4">
-          {/* Image Section */}
-          <div className="md:flex md:gap-48 justify-center">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              className=" relative"
-            >
-              <div className="relative rounded-xl  bg-white overflow-hidden shadow-lg ">
-                <img
-                  src="https://i.ibb.co/kggpdn6m/herosec.png"
-                  alt="Restaurant analytics"
-                  className="h-96 "
-                />
-              </div>
-            </motion.div>
-
-            {/* Content Section */}
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              className="lg:w-1/2 space-y-8"
-            >
-              <div className="space-y-4">
-                <h2 className="text-4xl font-bold text-green-800">
-                  Transform Your <span className="text-gold">Restaurant</span>{" "}
-                  Operations
-                </h2>
-                <div className="h-1 w-16 bg-gold" />
-              </div>
-
-              <ul className="space-y-6">
-                {[
-                  "30% faster table turnover",
-                  "Real-time sales analytics dashboard",
-                  "Reduced staffing costs through automation",
-                  "Customizable branding integration",
-                ].map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-gold/10 rounded-lg flex items-center justify-center border border-gold/20">
-                      <CheckCircle className="text-gold w-5 h-5" />
-                    </div>
-                    <p className="text-lg text-gray-700">{item}</p>
-                  </li>
-                ))}
-              </ul>
-
-              <motion.button
-                whileHover={{ y: -2 }}
-                className="bg-gold text-green-800 px-8 py-4 rounded-lg font-semibold 
-                 hover:bg-gold/90 transition-colors flex items-center gap-2
-                 shadow-md hover:shadow-lg"
-              >
-                <ArrowRight className="w-5 h-5" />
-                <span>Optimize Your Restaurant</span>
-              </motion.button>
-            </motion.div>
-          </div>
-        </div>
-      </SectionWrapper>
-
-      {/* How It Works */}
-      <SectionWrapper bgColor="bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -316,10 +266,11 @@ const LandingPage = () => {
             className="text-center mb-16"
           >
             <h2 className="text-4xl font-bold text-green-800 mb-4">
-              Simple <span className="text-gold">Three-Step</span> Process
+              <span className="text-gold">Effortless Enjoyment</span> Your
+              Customers Deserve
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Experience seamless dining with our intuitive platform
+              Create dining experiences so smooth, customers feel like royalty
             </p>
             <div className="mt-6 h-1 w-24 bg-gold mx-auto" />
           </motion.div>
@@ -327,19 +278,26 @@ const LandingPage = () => {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                icon: <Camera className="text-green-800" />,
-                title: "Scan QR Code",
-                desc: "Instantly access the menu using your smartphone camera",
+                icon: <Sparkles className="text-green-800" />,
+                title: "Instant Menu Access",
+                desc: "Guests browse your offerings the moment they sit down – no waiting, no paper menus",
+                benefit:
+                  "85% of diners prefer digital menus for quicker decisions*",
+                emotionalHook: "Turn arrival moments into anticipation",
               },
               {
-                icon: <Utensils className="text-green-800" />,
-                title: "Customize Order",
-                desc: "Select dishes and personalize your meal preferences",
+                icon: <BookUser className="text-green-800" />,
+                title: "Stress-Free Customization",
+                desc: "Allergy filters and chef suggestions make personalization effortless",
+                benefit: "2.3x more repeat orders with saved preferences",
+                emotionalHook: "Every meal feels tailor-made",
               },
               {
                 icon: <Wallet className="text-green-800" />,
-                title: "Secure Payment",
-                desc: "Fast checkout with multiple payment options",
+                title: "One-Tap Freedom",
+                desc: "Split bills and pay securely without waiting for staff assistance",
+                benefit: "62% faster table turnover during peak hours*",
+                emotionalHook: "Leave when ready, not when permitted",
               },
             ].map((step, idx) => (
               <motion.div
@@ -350,14 +308,14 @@ const LandingPage = () => {
                 transition={{ delay: idx * 0.15 }}
                 className="group relative"
               >
-                <div className="h-full p-8 rounded-xl bg-white border border-gray-200 hover:border-gold/30 transition-all shadow-sm hover:shadow-md">
-                  {/* Number Indicator */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-gold/10 rounded-full flex items-center justify-center text-green-800 font-bold text-xl border border-gold/20">
-                    {idx + 1}
+                <div className="h-full p-8 rounded-xl bg-white border-2 border-transparent hover:border-gold/20 transition-all shadow-lg hover:shadow-xl">
+                  {/* Comfort Indicator */}
+                  <div className="absolute top-4 right-4 bg-green-50 p-2 rounded-full">
+                    <CheckCircle className="w-6 h-6 text-gold" />
                   </div>
 
                   {/* Icon Container */}
-                  <div className="w-20 h-20 mx-auto mb-6 bg-gold/10 rounded-full flex items-center justify-center border border-gold/20">
+                  <div className="w-20 h-20 mx-auto mb-6 bg-gold/10 rounded-full flex items-center justify-center border-2 border-gold/20">
                     {React.cloneElement(step.icon, {
                       size: 36,
                       className: "text-green-800",
@@ -367,10 +325,19 @@ const LandingPage = () => {
                   <h3 className="text-2xl font-semibold text-green-800 text-center mb-4">
                     {step.title}
                   </h3>
-                  <div className="h-1 w-12 bg-gold/30 mx-auto mb-6" />
-                  <p className="text-gray-600 text-center leading-relaxed">
+                  <p className="text-gray-600 text-center mb-4 leading-relaxed">
                     {step.desc}
                   </p>
+                  <div className="h-px bg-gold/20 my-6 w-3/4 mx-auto" />
+                  <div className="text-center space-y-2">
+                    <p className="text-sm text-green-800/80">{step.benefit}</p>
+                    <p className="text-gold font-semibold italic">
+                      {step.emotionalHook}
+                    </p>
+                  </div>
+
+                  {/* Hover Enhancement */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-green-50/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 </div>
               </motion.div>
             ))}
@@ -378,6 +345,266 @@ const LandingPage = () => {
         </div>
       </SectionWrapper>
 
+      <div className="md:px-44 px-4">
+        {" "}
+        {/* Comfort Guarantee CTA */}
+        <motion.div
+          className=" text-center mt-6 md:flex justify-between bg-maroon/90 p-2 rounded-2xl shadow-lg border-2 border-gold/20"
+          initial={{ scale: 0.98 }}
+          whileInView={{ scale: 1 }}
+        >
+          <div className="md:flex justify-between gap-x-5 mx-auto">
+            <div>
+              <p className="text-gray-100 mb-2">
+                Restaurants using DineBuddy report 4.8/5 comfort scores from
+                diners.
+              </p>
+              <span className="block mt-2 text-xl text-gold">
+                "Finally, technology that disappears – leaving just great food
+                and conversation."
+              </span>
+            </div>
+            <div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                className="bg-green-800 mt-5 md:mt-0 text-white px-8 py-4 rounded-xl font-semibold shadow-md hover:shadow-lg flex items-center gap-2 mx-auto"
+                onClick={() => {
+                  navigate("/admin/login");
+                }}
+              >
+                <Utensils className="w-6 h-6" />
+                Serve Comfort on Every Plate
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Restaurant Services Section */}
+      <SectionWrapper bgColor="bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Section Header - Keep existing header animations */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-green-800 mb-4">
+              Empower Your <span className="text-gold">Restaurant</span>{" "}
+              Ecosystem
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Next-gen tools that transform operations and elevate guest
+              experiences
+            </p>
+            <div className="mt-8 h-1 w-24 bg-gold mx-auto" />
+          </motion.div>
+
+          {/* Alternating Feature Layout */}
+          <div className="space-y-16">
+            {[
+              {
+                img: "https://i.ibb.co/tTCjT22T/mediamodifier-image.png",
+                title: "Smart Digital Menu",
+                desc: "Dynamic menu that updates instantly, reducing customer wait times by 40%",
+              },
+            ].map((service, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.15 }}
+                className={`group relative flex flex-col ${
+                  idx % 2 ? "md:flex-row-reverse" : "md:flex-row"
+                } items-center gap-8 md:gap-12 p-8 rounded-2xl bg-gradient-to-r ${
+                  idx % 2
+                    ? "from-green-50/50 to-white"
+                    : "from-white to-green-50/50"
+                } hover:bg-green-50/30 transition-colors`}
+              >
+                {/* Image Container */}
+                <div className="relative flex w-full md:w-1/2 justify-center overflow-hidden rounded-xl shadow-2xl">
+                  <div className="h-full  w-auto bg-stone-50">
+                    <img
+                      src={service.img}
+                      alt={service.title}
+                      className="h-full w-auto justify-center object-cover transform transition-all duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 ring-1 ring-inset ring-green-800/10 rounded-xl pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Content Container */}
+                <div className="w-full md:w-1/2 space-y-4">
+                  <h3 className="text-3xl font-bold text-green-800 relative">
+                    <span className="absolute -left-6 top-3 w-4 h-4 bg-gold rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {service.title}
+                  </h3>
+                  <p className="text-lg text-gray-600 leading-relaxed">
+                    {service.desc}
+                  </p>
+                  <div className="flex items-center gap-2 pt-4">
+                    <div className="w-8 h-px bg-gold" />
+                    <span className="text-sm font-semibold text-gold tracking-wide">
+                      LEARN MORE →
+                    </span>
+                  </div>
+                </div>
+
+                {/* Decorative Elements */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-gold/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              </motion.div>
+            ))}
+            {[
+              {
+                img: "https://i.ibb.co/HLn7tZwJ/Screenshot-510.png",
+                title: "Business Intelligence Hub",
+                desc: "Make data-driven decisions with real-time sales trends and customer insights",
+              },
+              {
+                img: "https://i.ibb.co/0RV8k4gR/Screenshot-511.png",
+                title: "Live Order Symphony",
+                desc: "Seamless coordination between tables, kitchen, and delivery with 99.9% accuracy",
+              },
+              {
+                img: "https://i.ibb.co/rTb5dSL/Screenshot-513.png",
+                title: "Instant Menu Mastery",
+                desc: "Update offerings across all platforms in seconds, never miss a sales opportunity",
+              },
+              {
+                img: "https://i.ibb.co/Jjz04DZn/Screenshot-512.png",
+                title: "Kitchen Command Center",
+                desc: "95% faster order processing with prioritized tickets and chef alerts",
+              },
+              {
+                img: "https://i.ibb.co/bRzzZ0vr/Screenshot-514.png",
+                title: "QR Fortress Security",
+                desc: "Protect your digital assets with location-based access control",
+              },
+            ].map((service, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.15 }}
+                className={`group relative flex flex-col ${
+                  (idx + 1) % 2 ? "md:flex-row-reverse" : "md:flex-row"
+                } items-center gap-8 md:gap-12 p-8 rounded-2xl bg-gradient-to-r ${
+                  (idx + 1) % 2
+                    ? "from-green-50/50 to-white"
+                    : "from-white to-green-50/50"
+                } hover:bg-green-50/30 transition-colors`}
+              >
+                {/* Image Container */}
+                <div className="w-full md:w-1/2 relative overflow-hidden rounded-xl shadow-2xl">
+                  <div className="aspect-video bg-gradient-to-r from-green-800/20 to-gold/10">
+                    <img
+                      src={service.img}
+                      alt={service.title}
+                      className="w-full h-full object-cover transform transition-all duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="absolute inset-0 ring-1 ring-inset ring-green-800/10 rounded-xl pointer-events-none" />
+                </div>
+
+                {/* Content Container */}
+                <div className="w-full md:w-1/2 space-y-4">
+                  <h3 className="text-3xl font-bold text-green-800 relative">
+                    <span className="absolute -left-6 top-3 w-4 h-4 bg-gold rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {service.title}
+                  </h3>
+                  <p className="text-lg text-gray-600 leading-relaxed">
+                    {service.desc}
+                  </p>
+                  <div className="flex items-center gap-2 pt-4">
+                    <div className="w-8 h-px bg-gold" />
+                    <span className="text-sm font-semibold text-gold tracking-wide">
+                      LEARN MORE →
+                    </span>
+                  </div>
+                </div>
+
+                {/* Decorative Elements */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-gold/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </SectionWrapper>
+
+      {/* Restaurant Benefits */}
+      {/* Restaurant Benefits */}
+      <SectionWrapper bgColor="bg-green-50">
+        <div className="container mx-auto px-4 overflow-x-hidden">
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12">
+            {/* Image Section */}
+            <motion.div
+              initial={{ opacity: 0, x: 0 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1}}
+              viewport={{ once: true }}
+              className="w-full lg:w-1/2 flex justify-center"
+            >
+              <div className="relative w-full max-w-sm md:max-w-md rounded-xl aspect-square bg-white shadow-lg overflow-hidden">
+                <img
+                  src="https://i.ibb.co/kggpdn6m/herosec.png"
+                  alt="Restaurant analytics"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </motion.div>
+
+            {/* Content Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration:1 }}
+              viewport={{ once: true }}
+              className="w-full lg:w-1/2 max-w-xl"
+            >
+              <div className="space-y-4 mb-8">
+                <h2 className="text-3xl md:text-4xl font-bold text-green-800">
+                  Transform Your <span className="text-gold">Restaurant</span>{" "}
+                  Operations
+                </h2>
+                <div className="h-1 w-16 bg-yellow-600" />
+              </div>
+
+              <ul className="space-y-6 mb-8">
+                {[
+                  "30% faster table turnover",
+                  "Real-time sales analytics dashboard",
+                  "Reduced staffing costs through automation",
+                  "Customizable branding integration",
+                ].map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center border border-yellow-200">
+                      <CheckCircle className="text-yellow-600 w-5 h-5" />
+                    </div>
+                    <p className="text-lg text-gray-700">{item}</p>
+                  </li>
+                ))}
+              </ul>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                className="w-full sm:w-auto bg-gold text-white px-6 py-3 rounded-lg font-semibold 
+          hover:bg-gold/90 transition-colors flex items-center justify-center gap-2
+          shadow-md hover:shadow-lg"
+                onClick={() => {
+                  navigate("/admin/login");
+                }}
+              >
+                <ArrowRight className="w-5 h-5" />
+                <span>Optimize Your Restaurant</span>
+              </motion.button>
+            </motion.div>
+          </div>
+        </div>
+      </SectionWrapper>
       {/* Pricing Section */}
       <SectionWrapper bgColor="bg-metallic/10">
         <div className="max-w-6xl mx-auto">
@@ -390,7 +617,7 @@ const LandingPage = () => {
             className="text-center mt-8 mb-12"
           >
             <button className="bg-maroon text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg flex items-center gap-2 mx-auto">
-              <Sparkles className="w-6 h-6" />
+              <Sparkles className="w-20 h-20 md:w-6 md:h-6" />
               Currently the Site is Still Under Development and only a MVP is
               released, Therefore you can Try all our available Services for
               Free
@@ -402,7 +629,7 @@ const LandingPage = () => {
                 title: "Basic",
                 price: "2000",
                 features: [
-                  "Up to 50 tables",
+                  "Up to 10 tables",
                   "Basic Analytics",
                   "Email Support",
                   "QR Menu System",
@@ -413,7 +640,7 @@ const LandingPage = () => {
                 title: "Professional",
                 price: "3500",
                 features: [
-                  "Up to 200 tables",
+                  "Up to 50 tables",
                   "Advanced Analytics",
                   "Priority Support",
                   "Custom Branding",
@@ -489,11 +716,13 @@ const LandingPage = () => {
           </div>
         </div>
       </SectionWrapper>
-
       <footer className="bg-deep-green text-white py-20 px-4">
         <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-8">
           <div className="space-y-4">
             <h3 className="text-2xl font-bold">DineBuddy</h3>
+            <p className="text-beige-100 my-0 py-0">
+              © {new Date().getFullYear()} BiteBridge. All rights reserved.
+            </p>
             <p className="text-beige-100">
               Revolutionizing dining experiences since 2025
             </p>
@@ -518,7 +747,6 @@ const LandingPage = () => {
                   <ChevronRight size={16} className="text-gold" />
                   {link}
                 </motion.div>
-                
               )
             )}
           </div>
@@ -537,18 +765,23 @@ const LandingPage = () => {
               >
                 <ArrowRight size={20} />
               </motion.button>
-              
             </form>
             <motion.div
-                whileHover={{ y: -3 }}
-                onClick={handleEmailClick}
-                className="cursor-pointer flex"
-              >
-                <Mail className="text-gold hover:text-beige-100 mx-2" />hellodinebuddy@gmail.com
-              </motion.div>
+              whileHover={{ y: -3 }}
+              onClick={handleEmailClick}
+              className="cursor-pointer flex"
+            >
+              <Mail className="text-gold hover:text-beige-100 mx-2" />
+              hellodinebuddy@gmail.com
+            </motion.div>
           </div>
         </div>
       </footer>
+      <QRScannerModal
+        isOpen={isQRScannerOpen}
+        onClose={() => setIsQRScannerOpen(false)}
+        onScan={handleScanComplete}
+      />
     </div>
   );
 };
@@ -559,33 +792,5 @@ const SectionWrapper = ({ children, bgColor = "bg-white" }) => (
     <div className="max-w-6xl mx-auto">{children}</div>
   </section>
 );
-
-const FeatureCard = ({ icon, title, desc, index }) => {
-  const controls = useAnimation();
-  const [ref, inView] = useScrollInView({ threshold: 0.1, triggerOnce: true });
-
-  useEffect(() => {
-    if (inView) controls.start("visible");
-  }, [controls, inView]);
-
-  return (
-    <motion.div
-      ref={ref}
-      variants={{
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0 },
-      }}
-      initial="hidden"
-      animate={controls}
-      transition={{ delay: index * 0.2 }}
-      whileHover={{ y: -10 }}
-      className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow text-center space-y-4"
-    >
-      <div className="text-deep-green">{icon}</div>
-      <h3 className="text-2xl font-bold">{title}</h3>
-      <p className="text-gray-600">{desc}</p>
-    </motion.div>
-  );
-};
 
 export default LandingPage;

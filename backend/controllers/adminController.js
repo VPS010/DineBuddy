@@ -444,7 +444,7 @@ const addMenuItem = async (req, res) => {
 
 
             });
-            
+
         }
 
         // Validate spice level
@@ -1080,6 +1080,30 @@ const editOrder = async (req, res) => {
 };
 
 
+// Route to check if a table is active
+const CheckTableStatus = async (req, res) => {
+    try {
+        const { tableNumber } = req.params;
+        const restaurantId = req.user.restaurantId; // Extracted from authenticated user
+
+        // Find the table in the restaurant
+        const table = await Order.findOne({ restaurantId, tableNumber: tableNumber, status: "Active" });
+
+        if (!table) {
+            return res.status(404).json({ success: false, message: "Table not found" });
+        }
+
+        // Respond with table status
+        res.json({ success: true, isActive: table.isActive });
+
+    } catch (error) {
+        console.error("Error checking table status:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+}
+
+
+
 // Delete Order
 const deleteOrder = async (req, res) => {
     const { id } = req.params;
@@ -1212,7 +1236,7 @@ module.exports = {
     addMenuItem, getMenu, getMenuItem, updateMenuItem, deleteMenuItem,
     generateQRCode,
     getOrCreateSession, allSessions, activeSessions,
-    createAdminOrder, getOrders, editOrder, deleteOrder,
+    createAdminOrder, getOrders, editOrder, CheckTableStatus, deleteOrder,
     getKitchenOrders, updateOrderItemStatus,
     orderStatus, orderPay
 };

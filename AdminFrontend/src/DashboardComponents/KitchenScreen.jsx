@@ -9,7 +9,6 @@ const KitchenScreen = () => {
   const [orders, setOrders] = useState([]);
   const [shortlistedItems, setShortlistedItems] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [showCompleted, setShowCompleted] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);

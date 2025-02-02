@@ -2,6 +2,34 @@ import React, { useState, useMemo, useRef } from "react";
 import { X, Plus, Search } from "lucide-react";
 import axios from "axios";
 
+const CustomDialog = ({ isOpen, onClose, tableNumber }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Table Already Active
+          </h3>
+          <p className="mt-2 text-gray-600">
+            Table {tableNumber} currently has an active order. Please choose a
+            different table or wait until the current order is completed.
+          </p>
+        </div>
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Okay, understood
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CreateOrder = ({
   onClose,
   onCreateOrder,
@@ -15,6 +43,7 @@ const CreateOrder = ({
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTableError, setShowTableError] = useState(false);
   const searchInputRef = useRef(null);
 
   // Filter menu items based on search term
@@ -25,6 +54,31 @@ const CreateOrder = ({
     );
   }, [availableMenuItems, searchTerm]);
 
+  // Check table status using the API endpoint
+  const checkTableStatus = async (tableNum) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3000/api/v1/admin/order/${tableNum}`,
+        {
+          headers: {
+            Authorization: localStorage.getItem("authorization"),
+          },
+        }
+      );
+
+      if (response.data.success) {
+        return !response.data.success; // Return true if table is available (not active)
+      }
+      return true; // If table not found, assume it's available
+    } catch (error) {
+      console.error("Error checking table status:", error);
+      if (error.response?.status === 404) {
+        return true; // Table not found, so it's available
+      }
+      throw error;
+    }
+  };
+
   // Generate a unique ID for new items
   const generateUniqueId = () => {
     return `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -34,7 +88,7 @@ const CreateOrder = ({
   const handleMenuItemAdd = (menuItem) => {
     const newItem = {
       id: generateUniqueId(), // Generate a unique temporary ID
-      itemId: menuItem._id,   // Keep the original menu item ID
+      itemId: menuItem._id, // Keep the original menu item ID
       name: menuItem.name,
       price: menuItem.price,
       quantity: 1,
@@ -66,6 +120,16 @@ const CreateOrder = ({
     setIsSubmitting(true);
 
     try {
+      // Check table status for dine-in orders
+      if (orderType === "Dine-In") {
+        const isTableAvailable = await checkTableStatus(tableNumber);
+        if (!isTableAvailable) {
+          setShowTableError(true);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const response = await axios.post(
         "http://localhost:3000/api/v1/admin/orders",
         {
@@ -73,7 +137,7 @@ const CreateOrder = ({
           tableNumber: orderType === "Dine-In" ? tableNumber : null,
           customerName: customerName || "Valued Customer",
           items: items.map((item) => ({
-            itemId: item.itemId, // Use the original menu item ID
+            itemId: item.itemId,
             quantity: item.quantity,
             spiceLevel: item.spiceLevel,
           })),
@@ -91,7 +155,11 @@ const CreateOrder = ({
       }
     } catch (error) {
       console.error("Error creating order:", error);
-      alert(error.response?.data?.error || "Failed to create order");
+      if (error.response?.status === 404) {
+        alert("Table not found. Please check the table number.");
+      } else {
+        alert(error.response?.data?.error || "Failed to create order");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -121,7 +189,6 @@ const CreateOrder = ({
       )
     );
   };
-
 
   const handleModalClick = (e) => {
     if (e.target === e.currentTarget) {
@@ -322,6 +389,12 @@ const CreateOrder = ({
           </div>
         </div>
       </div>
+      {/* Custom Dialog for table error */}
+      <CustomDialog
+        isOpen={showTableError}
+        onClose={() => setShowTableError(false)}
+        tableNumber={tableNumber}
+      />
     </div>
   );
 };

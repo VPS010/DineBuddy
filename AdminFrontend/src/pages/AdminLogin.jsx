@@ -7,7 +7,6 @@ import { useNavigate } from "react-router-dom";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-
   const [user, setUser] = useState({
     email: "",
     password: "",
@@ -20,22 +19,14 @@ const AdminLogin = () => {
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) {
-      return "Email is required";
-    }
-    if (!emailRegex.test(email)) {
-      return "Please enter a valid email address";
-    }
+    if (!email) return "Email is required";
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
     return "";
   };
 
   const validatePassword = (password) => {
-    if (!password) {
-      return "Password is required";
-    }
-    if (password.length < 8) {
-      return "Password must be at least 6 characters long";
-    }
+    if (!password) return "Password is required";
+    if (password.length < 8) return "Password must be at least 6 characters long";
     return "";
   };
 
@@ -45,8 +36,6 @@ const AdminLogin = () => {
       ...prevUser,
       [name]: value,
     }));
-
-    // Clear errors when user starts typing
     setErrors((prevErrors) => ({
       ...prevErrors,
       [name]: "",
@@ -58,27 +47,20 @@ const AdminLogin = () => {
       email: validateEmail(user.email),
       password: validatePassword(user.password),
     };
-
     setErrors(newErrors);
-    return !Object.values(newErrors).some(error => error !== "");
+    return !Object.values(newErrors).some((error) => error !== "");
   };
 
   const loginHandler = (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     axios
       .post("http://localhost:3000/api/v1/admin/signin", user)
       .then((result) => {
         localStorage.setItem("authorization", `Bearer ${result.data.token}`);
         navigate("/admin/dashboard");
-        setUser({
-          email: "",
-          password: "",
-        });
+        setUser({ email: "", password: "" });
       })
       .catch((error) => {
         console.log(
@@ -90,99 +72,98 @@ const AdminLogin = () => {
   };
 
   return (
-    <section className="flex bg-gray-50 min-h-screen items-center justify-center">
-      <div className="hidden md:block ml-52 mr-0">
+    <section className="h-screen flex flex-row bg-gray-50 overflow-hidden">
+      {/* Image container - hidden on small screens */}
+      <div className="hidden md:flex md:w-1/2 lg:w-2/5 items-center justify-center p-4">
         <img
-          src="/herosec.png"
-          className="h-96 w-[500px] rounded-md m-8"
-          alt="Hero section"
+          src="https://i.ibb.co/kggpdn6m/herosec.png"
+          className="h-96 w-96 object-contain rounded-lg shadow-lg"
+          alt="Hero"
         />
       </div>
-      <div className="w-full md:w-[90%]">
-        <div className="flex flex-col items-center w-[500px] justify-center px-8 py-8 mx-auto lg:py-0">
-          <a
-            href="/"
-            className="flex items-center mb-6 text-2xl font-semibold text-gray-900"
-          >
-            <p className="text-5xl md:text-5xl font-mono text-center sm:text-left font-extrabold text-stone-800">
-              DineBuddy
-            </p>
-          </a>
-          <div className="w-full bg-stone-100 rounded-lg shadow sm:max-w-md">
-            <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
-              <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl">
-                Sign in to your account
+
+      {/* Form container */}
+      <div className="w-full md:w-1/2 lg:w-3/5 flex items-center justify-center p-3">
+        <div className="w-full max-w-md">
+          {/* Logo/Brand */}
+          <div className="text-center mb-4">
+            <a href="/" className="inline-block">
+              <h1 className="text-4xl md:text-4xl font-mono font-extrabold text-green-800">
+                DineBuddy
               </h1>
-              <form
-                className="space-y-4 md:space-y-6 text-left"
-                onSubmit={loginHandler}
-                noValidate
-              >
-                <div>
-                  <InputBox
-                    label="Your email"
-                    iname="email"
-                    id="admin-email"
-                    type="email"
-                    placeholder="name@company.com"
-                    onChange={inputHandler}
-                    value={user.email}
-                    required
+            </a>
+          </div>
+
+          {/* Form Card */}
+          <div className="bg-stone-100 rounded-lg mx-2 shadow-md p-4">
+            <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">
+              Sign in to your account
+            </h2>
+
+            <form className="space-y-3" onSubmit={loginHandler} noValidate>
+              <div>
+                <InputBox
+                  label="Your email"
+                  iname="email"
+                  id="admin-email"
+                  type="email"
+                  placeholder="name@company.com"
+                  onChange={inputHandler}
+                  value={user.email}
+                  required
+                />
+                {errors.email && (
+                  <p className="mt-0.5 text-xs text-red-600">{errors.email}</p>
+                )}
+              </div>
+
+              <div>
+                <InputBox
+                  label="Password"
+                  iname="password"
+                  id="admin-password"
+                  type="password"
+                  placeholder="••••••••"
+                  onChange={inputHandler}
+                  value={user.password}
+                  required
+                />
+                {errors.password && (
+                  <p className="mt-0.5 text-xs text-red-600">{errors.password}</p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <input
+                    id="remember"
+                    type="checkbox"
+                    className="w-3 h-3 border border-gray-300 rounded bg-gray-50 focus:ring-2 focus:ring-blue-300"
                   />
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.email}
-                    </p>
-                  )}
+                  <label htmlFor="remember" className="text-xs text-gray-500">
+                    Remember me
+                  </label>
                 </div>
-                <div>
-                  <InputBox
-                    label="Password"
-                    iname="password"
-                    id="admin-password"
-                    type="password"
-                    placeholder="••••••••"
-                    onChange={inputHandler}
-                    value={user.password}
-                    required
-                  />
-                  {errors.password && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.password}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-start">
-                    <div className="flex items-center h-5">
-                      <input
-                        id="remember"
-                        aria-describedby="remember"
-                        type="checkbox"
-                        className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-blue-300"
-                      />
-                    </div>
-                    <div className="ml-3 text-sm">
-                      <label htmlFor="remember" className="text-gray-500">
-                        Remember me
-                      </label>
-                    </div>
-                  </div>
-                  <a
-                    href="/forgot-password"
-                    className="text-sm font-medium text-emerald-900 hover:underline"
-                  >
-                    Forgot password?
-                  </a>
-                </div>
+                <a
+                  href="/forgot-password"
+                  className="text-xs font-medium text-emerald-900 hover:underline"
+                >
+                  Forgot password?
+                </a>
+              </div>
+
+              <div className="pt-2">
                 <Button type="submit" label="Sign in" />
+              </div>
+              
+              <div className="pt-1">
                 <WarningLink
                   label="Don't have an account yet?"
                   buttonText="Sign up"
                   to="/admin/signup"
                 />
-              </form>
-            </div>
+              </div>
+            </form>
           </div>
         </div>
       </div>

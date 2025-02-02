@@ -541,15 +541,17 @@ const UnifiedAdminOrder = () => {
   const handleExportOrders = () => {
     // Get date filtered orders
     const dateFiltered = getDateFilteredOrders();
-    
+
     // Filter for only paid orders
-    const paidOrders = dateFiltered.filter(order => order.paymentStatus === "Paid");
-  
-    // Sort orders by date (most recent first)
-    const sortedOrders = paidOrders.sort((a, b) => 
-      new Date(b.createdAt) - new Date(a.createdAt)
+    const paidOrders = dateFiltered.filter(
+      (order) => order.paymentStatus === "Paid"
     );
-  
+
+    // Sort orders by date (most recent first)
+    const sortedOrders = paidOrders.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
     // Define headers with more detailed information
     const headers = [
       "Date",
@@ -561,32 +563,31 @@ const UnifiedAdminOrder = () => {
       "Subtotal",
       "Tax",
       "Total Amount",
-      "Payment Status"
+      "Payment Status",
     ];
-  
+
     // Create CSV data with formatted values
     const csvData = [
       headers.join(","),
-      ...sortedOrders.map(order => {
+      ...sortedOrders.map((order) => {
         const date = new Date(order.createdAt);
         const formattedDate = date.toLocaleDateString();
         const formattedTime = date.toLocaleTimeString();
-        
+
         // Format table/parcel display
-        const tableDisplay = order.type === "Parcel" 
-          ? "Parcel" 
-          : `T-${order.tableNumber}`;
-  
+        const tableDisplay =
+          order.type === "Parcel" ? "Parcel" : `T-${order.tableNumber}`;
+
         // Calculate financial values
         const subtotal = calculateSubtotal(order.items);
         const tax = calculateTax(subtotal);
         const total = subtotal + tax;
-  
+
         // Format items list
         const itemsList = order.items
-          .map(item => `${item.quantity}x ${item.name}`)
+          .map((item) => `${item.quantity}x ${item.name}`)
           .join("; ");
-  
+
         return [
           formattedDate,
           formattedTime,
@@ -597,15 +598,15 @@ const UnifiedAdminOrder = () => {
           subtotal.toFixed(2),
           tax.toFixed(2),
           total.toFixed(2),
-          order.paymentStatus
+          order.paymentStatus,
         ].join(",");
-      })
+      }),
     ].join("\n");
-  
+
     // Generate filename with current date
-    const currentDate = new Date().toISOString().split('T')[0];
+    const currentDate = new Date().toISOString().split("T")[0];
     const filename = `orders_export_${currentDate}.csv`;
-  
+
     // Create and trigger download
     const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
@@ -743,6 +744,21 @@ const UnifiedAdminOrder = () => {
                       >
                         Paid
                       </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-4 mr-4">
+                    <div className="flex items-center space-x-2 text-gray-800">
+                      <div className="bg-yellow-200 h-4 w-4 border-gray-500 border"></div>
+                      <span>Pending</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-gray-800">
+                      <div className="bg-blue-200  h-4 w-4 border-gray-500 border"></div>
+                      <span>In Progress</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-gray-800">
+                      <div className="bg-green-200 h-4 w-4 border-gray-500 border"></div>
+                      <span>Completed</span>
                     </div>
                   </div>
 

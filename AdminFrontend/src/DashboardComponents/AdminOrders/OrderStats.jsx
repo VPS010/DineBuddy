@@ -49,7 +49,9 @@ const OrderStats = ({ orders, showRevenue, setShowRevenue, TAX_RATE }) => {
       orders
         .filter(
           (order) =>
-            order.status === "Active" && order.paymentStatus === "Unpaid"
+            order.status === "Active" &&
+            order.paymentStatus === "Unpaid" &&
+            order.type === "Dine-In"
         )
         .map((order) => order.tableNumber)
     );

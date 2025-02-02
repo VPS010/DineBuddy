@@ -15,6 +15,7 @@ const { signupAdmin,
     generateQRCode,
     createAdminOrder,
     getOrders,
+    CheckTableStatus,
     getKitchenOrders,
     updateOrderItemStatus,
     getMenuCategories,
@@ -42,7 +43,7 @@ router.post('/qr/generate', protect, generateQRCode);
 router.put('/restaurant', protect, updateRestaurant);      // Update restaurant info
 router.get('/restaurant', protect, getRestaurant);         // Get restaurant info
 
-router.post('/menu/categories',protect, menuCategories);
+router.post('/menu/categories', protect, menuCategories);
 router.get('/menu/categories', protect, getMenuCategories);
 router.delete('/menu/categories/:category', protect, deleteCategory);
 
@@ -59,6 +60,7 @@ router.get('/orders', protect, getOrders);
 router.post('/orders', protect, createAdminOrder);
 router.patch('/order/:id', protect, editOrder);
 router.delete('/order/:id', protect, deleteOrder);
+router.get("/order/:tableNumber", protect, CheckTableStatus);
 router.put('/order/complete/:orderId', protect, orderStatus);
 router.put('/order/pay/:orderId', protect, orderPay);
 
