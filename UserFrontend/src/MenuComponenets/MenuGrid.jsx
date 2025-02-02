@@ -19,16 +19,12 @@ const MenuGrid = () => {
   const selectedCategory = useRecoilValue(selectedCategoryState);
   const sortBy = useRecoilValue(sortByState);
 
-  // Filter and sort logic
+  // Filter and sort logic (without category filtering)
   const filteredAndSortedData = useMemo(() => {
     let filtered = [...menuData];
 
     if (isVegOnly) {
       filtered = filtered.filter((item) => item.isVeg);
-    }
-
-    if (selectedCategory !== "All") {
-      filtered = filtered.filter((item) => item.category === selectedCategory);
     }
 
     if (searchQuery) {
@@ -53,7 +49,7 @@ const MenuGrid = () => {
     });
 
     return filtered;
-  }, [menuData, isVegOnly, selectedCategory, searchQuery, sortBy]);
+  }, [menuData, isVegOnly, searchQuery, sortBy]);
 
   // Group items by category
   const groupedItems = useMemo(() => {
@@ -66,10 +62,8 @@ const MenuGrid = () => {
     }, {});
   }, [filteredAndSortedData]);
 
-  // Initialize expandedCategories with all categories set to true
   const [expandedCategories, setExpandedCategories] = useState({});
 
-  // Use useEffect to set all categories to expanded when groupedItems changes
   useEffect(() => {
     const initialExpanded = Object.keys(groupedItems).reduce(
       (acc, category) => {
@@ -81,7 +75,37 @@ const MenuGrid = () => {
     setExpandedCategories(initialExpanded);
   }, [groupedItems]);
 
-  // Toggle category expansion
+  // Scroll to selected category
+  // Modified scroll effect
+  useEffect(() => {
+    if (selectedCategory && selectedCategory !== "All") {
+      setExpandedCategories((prev) => ({
+        ...prev,
+        [selectedCategory]: true,
+      }));
+
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`category-${selectedCategory}`);
+        if (element) {
+          // Use scrollY instead of pageYOffset
+          const elementRect = element.getBoundingClientRect();
+          const absoluteElementTop = elementRect.top + window.scrollY;
+          const middle =
+            absoluteElementTop -
+            window.innerHeight / 2 +
+            elementRect.height / 4;
+
+          window.scrollTo({
+            top: middle,
+            behavior: "smooth",
+          });
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [selectedCategory]);
+
   const toggleCategory = (category) => {
     setExpandedCategories((prev) => ({
       ...prev,
@@ -89,7 +113,6 @@ const MenuGrid = () => {
     }));
   };
 
-  // If no items found
   if (Object.keys(groupedItems).length === 0) {
     return (
       <div className="text-center py-12">
@@ -107,7 +130,11 @@ const MenuGrid = () => {
   return (
     <div className="w-full bg-[#FDFBF7] p-2 mt-6 mx-4 justify-center sm:px-6 lg:px-8">
       {Object.entries(groupedItems).map(([category, items]) => (
-        <div key={`category-${category}`} className="mb-8 sm:mb-12">
+        <div
+          key={`category-${category}`}
+          id={`category-${category}`}
+          className="mb-8 sm:mb-12"
+        >
           <div
             className="sticky top-0 bg-[#FDFBF7] z-10 py-4 sm:py-6 cursor-pointer hover:bg-[#F8F6F0] transition-colors duration-300"
             onClick={() => toggleCategory(category)}

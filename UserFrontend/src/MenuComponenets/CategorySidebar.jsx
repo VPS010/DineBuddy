@@ -72,11 +72,11 @@ const CategoryMenu = ({ categories }) => {
                 </button>
               </div>
             </div>
-
             {/* Categories list with premium styling and scrolling */}
             <div className="flex-1 overflow-y-auto p-3 min-h-0">
               <div className="space-y-2">
-                {categories.map((category) => (
+                {/* Sorted categories added here */}
+                {[...categories].sort().map((category) => (
                   <button
                     key={category}
                     className={`w-full px-4 py-3.5 rounded-xl text-left transition-all duration-200 group ${
@@ -104,7 +104,6 @@ const CategoryMenu = ({ categories }) => {
                 ))}
               </div>
             </div>
-
             {/* Premium bottom gradient border */}
             <div className="h-1 bg-gradient-to-r from-[#800000] via-[#2D6A4F] to-[#B8860B] flex-shrink-0" />
           </div>
