@@ -1,38 +1,43 @@
 const handlePrint = () => {
-    const printContent = document.getElementById("qr-cards-container");
-  
-    if (!printContent) {
-      console.error("QR cards container not found");
-      return;
-    }
-  
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    document.body.appendChild(iframe);
-  
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-  
-    const styles = Array.from(document.styleSheets)
-      .map((styleSheet) => {
-        try {
-          return Array.from(styleSheet.cssRules || [])
-            .map((rule) => rule.cssText)
-            .join("\n");
-        } catch (e) {
-          console.warn("Could not access stylesheet:", styleSheet.href);
-          return "";
-        }
-      })
-      .join("\n");
-  
-    iframeDoc.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Print QR Codes</title>
-         <style>
+  const printContent = document.getElementById("qr-cards-container");
+
+  if (!printContent) {
+    console.error("QR cards container not found");
+    return;
+  }
+
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
+  document.body.appendChild(iframe);
+
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+  const styles = Array.from(document.styleSheets)
+    .map((styleSheet) => {
+      try {
+        return Array.from(styleSheet.cssRules || [])
+          .map((rule) => rule.cssText)
+          .join("\n");
+      } catch (e) {
+        console.warn("Could not access stylesheet:", styleSheet.href);
+        return "";
+      }
+    })
+    .join("\n");
+
+  iframeDoc.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Print QR Codes</title>
+        <style>
           ${styles}
           @media print {
+            /* Force browser to print background colors and gradients */
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
             body { margin: 0; padding: 16px; }
             .grid {
               display: grid;
@@ -52,27 +57,27 @@ const handlePrint = () => {
               margin-bottom: 0;
             }
           }
-         </style>
-        </head>
-        <body>
-          ${printContent.outerHTML}
-        </body>
-      </html>
-    `);
-    iframeDoc.close();
-  
-    iframe.onload = () => {
-      try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-      } catch (e) {
-        console.error("Print failed:", e);
-      }
-  
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
-    };
+        </style>
+      </head>
+      <body>
+        ${printContent.outerHTML}
+      </body>
+    </html>
+  `);
+  iframeDoc.close();
+
+  iframe.onload = () => {
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch (e) {
+      console.error("Print failed:", e);
+    }
+
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 1000);
   };
-  
-  export default handlePrint;
+};
+
+export default handlePrint;

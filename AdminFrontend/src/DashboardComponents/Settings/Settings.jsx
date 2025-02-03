@@ -1,32 +1,38 @@
 import React, { useState } from "react";
 import GeoFenceSelector from "./GeoFence";
+import GettingStartedGuide from "./GetStarted";
 
 const SettingsPage = () => {
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useState("Guide");
 
   const tabData = {
-    general: {
-      title: "General Settings",
+    Guide: {
+      title: "Getting Started",
       content: (
         <div className="space-y-4">
-          <p className="font-semibold text-2xl">UNDER DEVELOPMENT</p>
+          <GettingStartedGuide />
         </div>
       ),
     },
     Geofence: {
       title: "Geofence Settings",
-      content:
-      <>
-      <p className="text-gray-600">Geofencing ensures your menu QR works only within your restaurant premises by defining a virtual boundary around your location.
-      Simply draw and save your restaurant's boundary on the map to restrict access outside.</p>
-      <GeoFenceSelector />
-      </> ,
+      content: (
+        <>
+          <p className="text-gray-600">
+            Geofencing ensures your menu QR works only within your restaurant
+            premises by defining a virtual boundary around your location. Simply
+            draw and save your restaurant's boundary on the map to restrict
+            access outside.
+          </p>
+          <GeoFenceSelector />
+        </>
+      ),
     },
     security: {
       title: "Security Settings",
       content: (
         <div className="space-y-4">
-      <p className="font-semibold text-2xl">UNDER DEVELOPMENT</p>
+          <p className="font-semibold text-2xl">UNDER DEVELOPMENT</p>
         </div>
       ),
     },

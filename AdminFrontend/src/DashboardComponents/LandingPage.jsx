@@ -264,6 +264,8 @@ const LandingPage = () => {
           </div>
         </div>
       </SectionWrapper>
+
+      
       {/* Effortless Experience Section */}
       <SectionWrapper bgColor="bg-green-50">
         <div className="max-w-7xl mx-auto px-4">

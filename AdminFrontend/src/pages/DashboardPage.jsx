@@ -6,6 +6,8 @@ import {
   Home,
   User,
   Settings,
+  HelpingHand,
+  HelpCircleIcon,
   Clock,
   Utensils,
   FileText,
@@ -20,6 +22,7 @@ import QRCodeGenerator from "../DashboardComponents/QRgenerator/QRCodeGenerator"
 import SettingsPage from "../DashboardComponents/Settings/Settings";
 import UnifiedAdminOrder from "../DashboardComponents/AdminOrders/UnifiedAdminOrder";
 import HeaderRight from "../components/HeaderRight";
+import Help from "../DashboardComponents/HelpPage";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -93,6 +96,7 @@ const DashboardPage = () => {
             { icon: FileText, label: "Menu", id: "menu" },
             { icon: User, label: "Profile", id: "profile" },
             { icon: Settings, label: "Settings", id: "settings" },
+            { icon: HelpCircleIcon, label: "Help", id: "help" },
           ].map((item) => (
             <button
               key={item.id}
@@ -152,6 +156,7 @@ const DashboardPage = () => {
           {activeSection === "profile" && <AdminProfile />}
           {activeSection === "generateQR" && <QRCodeGenerator />}
           {activeSection === "settings" && <SettingsPage />}
+          {activeSection === "help" && <Help />}
         </div>
       </div>
     </div>
