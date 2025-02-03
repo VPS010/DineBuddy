@@ -1,0 +1,33 @@
+name: Docker Image CI for GHCR
+
+on:
+  push
+
+jobs:
+  build_and_publish:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write  # Ensure the workflow has permission to push packages
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u vps010 --password-stdin
+
+      - name: Build and Push User Frontend
+        run: |
+          docker build ./UserFrontend -t ghcr.io/vps010/dinebuddy-userfrontend-ghcr:latest
+          docker push ghcr.io/vps010/dinebuddy-userfrontend-ghcr:latest
+
+      - name: Build and Push Admin Frontend
+        run: |
+          docker build ./AdminFrontend -t ghcr.io/vps010/dinebuddy-adminfrontend-ghcr:latest
+          docker push ghcr.io/vps010/dinebuddy-adminfrontend-ghcr:latest
+
+      - name: Build and Push Backend
+        run: |
+          docker build ./backend -t ghcr.io/vps010/dinebuddy-backend-ghcr:latest
+          docker push ghcr.io/vps010/dinebuddy-backend-ghcr:latest
