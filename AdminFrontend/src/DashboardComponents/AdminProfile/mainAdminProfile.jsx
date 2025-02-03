@@ -23,6 +23,7 @@ const AdminProfile = () => {
   const [restaurant, setRestaurant] = useState({
     name: "",
     address: "",
+    tax: 0,
     contact: "",
     description: "",
     businessHours: {},
@@ -57,6 +58,7 @@ const AdminProfile = () => {
         setRestaurant({
           name: restaurantData.name,
           address: restaurantData.address,
+          tax: restaurantData.tax,
           contact: restaurantData.contact,
           description: restaurantData.description,
           businessHours: restaurantData.businessHours,

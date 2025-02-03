@@ -3,11 +3,15 @@ const mongoose = require('mongoose');
 const orderSchema = new mongoose.Schema({
   tableNumber: {
     type: String,
-    required: true,
+    required: function () {
+      return this.type === 'Dine-In'; // Required only for dine-in orders
+    },
   },
   sessionId: {
     type: String,
-    required: true,
+    required: function () {
+      return this.type === 'Dine-In'; // Required only for dine-in orders
+    },
   },
   restaurantId: {
     type: String,
@@ -15,7 +19,7 @@ const orderSchema = new mongoose.Schema({
   },
   customerName: {
     type: String,
-    default: "Valued Customer"
+    default: "Valued Customer",
   },
   items: [
     {
@@ -47,14 +51,19 @@ const orderSchema = new mongoose.Schema({
       },
       status: {
         type: String,
-        enum: ['Pending', 'Completed'],
+        enum: ['Pending', 'In Progress', 'Completed'],
         default: 'Pending',
       },
     },
   ],
+  type: {
+    type: String,
+    enum: ['Dine-In', 'Parcel'],
+    default: 'Dine-In',
+  },
   totalAmount: {
     type: Number,
-    required: true, // Ensures totalAmount is always present
+    required: true,
   },
   status: {
     type: String,
@@ -64,7 +73,7 @@ const orderSchema = new mongoose.Schema({
   paymentStatus: {
     type: String,
     enum: ['Unpaid', 'Paid'],
-    default: "Unpaid"
+    default: "Unpaid",
   },
   createdAt: {
     type: Date,

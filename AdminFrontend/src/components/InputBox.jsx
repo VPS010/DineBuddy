@@ -1,4 +1,4 @@
-export function InputBox({ label, placeholder, onChange, ivalue, iname }) {
+export function InputBox({id, label, placeholder, onChange, ivalue, iname }) {
   return (
     <>
       <div>
@@ -10,7 +10,7 @@ export function InputBox({ label, placeholder, onChange, ivalue, iname }) {
           value={ivalue}
           onChange={onChange}
           placeholder={placeholder}
-          id="confirm-password"
+          id={id}
           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-600 focus:border-blue-600 block w-full p-2.5 "
           required=""
         />

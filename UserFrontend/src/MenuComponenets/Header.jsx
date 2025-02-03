@@ -41,7 +41,7 @@ const Header = ({ cartCount }) => {
                 <span className="text-[#B8860B] text-sm font-medium">
                   Powered by
                 </span>
-                <span className="text-white text-sm font-semibold">Servit</span>
+                <span className="text-white text-sm font-semibold">DineBuddy</span>
               </div>
             </div>
           </div>

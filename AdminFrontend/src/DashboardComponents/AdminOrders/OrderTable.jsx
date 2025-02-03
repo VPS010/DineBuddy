@@ -32,6 +32,23 @@ const OrderTable = ({
     handleMarkAsCompleted(orderId);
   };
 
+  const getOrderStatusColor = (order) => {
+    if (order.paymentStatus === "Paid") return "";
+
+    const allCompleted = order.items.every(
+      (item) => item.status === "Completed"
+    );
+    const hasInProgress = order.items.some(
+      (item) => item.status === "In Progress"
+    );
+    const allPending = order.items.every((item) => item.status === "Pending");
+
+    if (allCompleted) return "bg-green-100";
+    if (hasInProgress) return "bg-blue-100";
+    if (allPending) return "bg-yellow-100";
+    return "";
+  };
+
   return (
     <>
       <div className="bg-white rounded-lg shadow">
@@ -78,14 +95,20 @@ const OrderTable = ({
                       : "hover:bg-gray-50"
                   }`}
                 >
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
+                  <td
+                    className={`px-4 py-3 whitespace-nowrap text-sm ${getOrderStatusColor(
+                      order
+                    )}`}
+                  >
                     <div className="flex items-center">
                       <span>{order.id}</span>
                       <ChevronRight className="w-4 h-4 ml-2 md:hidden text-gray-400" />
                     </div>
                   </td>
                   <td className="hidden md:table-cell px-4 py-3 whitespace-nowrap text-sm">
-                    {order.tableNumber}
+                    {order.type === "Parcel"
+                      ? "Parcel"
+                      : `T-${order.tableNumber}`}
                   </td>
                   <td className="hidden lg:table-cell px-4 py-3 whitespace-nowrap text-sm">
                     {order.customerName}

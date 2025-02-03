@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Package } from "lucide-react";
 
 const OrderStats = ({ orders, showRevenue, setShowRevenue, TAX_RATE }) => {
   const stats = useMemo(() => {
@@ -49,10 +49,17 @@ const OrderStats = ({ orders, showRevenue, setShowRevenue, TAX_RATE }) => {
       orders
         .filter(
           (order) =>
-            order.status === "Active" && order.paymentStatus === "Unpaid"
+            order.status === "Active" &&
+            order.paymentStatus === "Unpaid" &&
+            order.type === "Dine-In"
         )
         .map((order) => order.tableNumber)
     );
+
+    // Count active parcel orders
+    const activeParcelOrders = orders.filter(
+      (order) => order.type === "Parcel" && order.status === "Active"
+    ).length;
 
     return {
       today: {
@@ -67,6 +74,7 @@ const OrderStats = ({ orders, showRevenue, setShowRevenue, TAX_RATE }) => {
         total: activeTableSet.size,
         tables: Array.from(activeTableSet).sort((a, b) => a - b),
       },
+      activeParcelOrders,
     };
   }, [orders, TAX_RATE]);
 
@@ -122,7 +130,7 @@ const OrderStats = ({ orders, showRevenue, setShowRevenue, TAX_RATE }) => {
         <div className="min-w-[150px] p-4">
           <h3 className="text-xl font-semibold text-gray-800">Active Tables</h3>
           <span className="text-md text-gray-500">Total Active</span>
-          <span className="font-semibold text-md ml-4">
+          <span className="font-semibold text-xl ml-4">
             {stats.activeTables.total}
           </span>
         </div>
@@ -138,6 +146,19 @@ const OrderStats = ({ orders, showRevenue, setShowRevenue, TAX_RATE }) => {
               </span>
             ))}
           </div>
+        </div>
+
+        <div className="space-y-6 p-2 flex justify-center flex-col rounded-md">
+          <span className="px-3 py-1 text-xl font-medium">
+            Active Parcel Orders:
+            <div className="flex">
+              <div className="flex items-center w-20 bg-amber-200 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold">
+                <Package className="w-4 h-4 mr-1" />
+                <span>Parcel</span>
+              </div>
+              <p className="mx-4 text-xl">{stats.activeParcelOrders}</p>
+            </div>
+          </span>
         </div>
       </div>
     </div>

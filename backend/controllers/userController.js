@@ -426,6 +426,71 @@ const createOrder = async (req, res) => {
 };
 
 
+const deleteOrderItem = async (req, res) => {
+    const { tableNumber, itemId } = req.params;
+
+    try {
+        // Find the order by table number and validate it exists
+        const order = await Order.findOne({
+            tableNumber: tableNumber,
+            status: 'Active'
+        });
+
+        if (!order) {
+            return res.status(404).json({
+                error: 'Active order not found for this table'
+            });
+        }
+
+        // Find the item in the order
+        const itemIndex = order.items.findIndex(
+            item => item._id.toString() === itemId
+        );
+        console.log('itemIndex:', itemId);
+        console.log('itemIndex:', itemIndex);
+
+        if (itemIndex === -1) {
+            return res.status(404).json({
+                error: 'Item not found in order'
+            });
+        }
+
+        // Calculate the amount to subtract from total
+        const itemToRemove = order.items[itemIndex];
+        const amountToSubtract = itemToRemove.price * itemToRemove.quantity;
+
+        // Remove the item and update total amount
+        order.items.splice(itemIndex, 1);
+        order.totalAmount = Math.max(0, order.totalAmount - amountToSubtract);
+        order.updatedAt = new Date();
+
+
+        await order.save();
+
+        return res.status(200).json({
+            message: 'Item removed successfully',
+            order
+        });
+
+    } catch (error) {
+        console.error('Error in deleteOrderItem:', error);
+
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                error: 'Invalid item ID format'
+            });
+        }
+
+        return res.status(500).json({
+            error: 'An error occurred while deleting the item',
+            details: error.message
+        });
+    }
+};
+
+
+
+
 const getOrder = async (req, res) => {
     const { restaurantId, tableNumber } = req.params;
 
@@ -479,7 +544,7 @@ const getOrder = async (req, res) => {
 module.exports = {
     signupUser, loginUser, getUserProfile,
     getMenu, getMenuItemById,
-    createSession, createOrder, getOrder
+    createSession, deleteOrderItem, createOrder, getOrder
 };
 
 

@@ -3,28 +3,23 @@ import axios from "axios";
 import MenuHeader from "./Header";
 import MenuItemCard from "./ItemCard";
 import MenuItemModal from "./ItemModal";
+import CategoryDialog from "./CategoryDialog";
 
 const MenuManagement = () => {
   const [menuItems, setMenuItems] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedItem, setSelectedItem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [error, setError] = useState(null);
-
-  const token = localStorage.getItem("authorization");
-  const api = axios.create({
-    baseURL: "http://localhost:3000",
-    headers: {
-      Authorization: token,
-    },
-  });
-
   const initialFormData = {
     name: "",
-    category: "Mains",
+    category: "", // Will be set to first category once loaded
     price: "",
     description: "",
     dietary: [],
@@ -34,9 +29,39 @@ const MenuManagement = () => {
     isAvailable: true,
     image: "/api/placeholder/400/400",
   };
-
   const [formData, setFormData] = useState(initialFormData);
 
+  const token = localStorage.getItem("authorization");
+  const api = axios.create({
+    baseURL: "http://localhost:3000",
+    headers: {
+      Authorization: token,
+    },
+  });
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get("/api/v1/admin/menu/categories");
+        setCategories(response.data.categories);
+
+        // Update formData only if it hasn't been set yet
+        setFormData((prev) => ({
+          ...(prev || initialFormData), // Handle initial null state
+          category: response.data.categories[0] || "",
+        }));
+
+        setError(null);
+      } catch (err) {
+        setError("Failed to fetch categories");
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Fetch menu items
   // Fetch menu items
   useEffect(() => {
     const fetchMenuItems = async () => {
@@ -106,6 +131,16 @@ const MenuManagement = () => {
     });
   };
 
+  useEffect(() => {
+    if (isModalOpen && !selectedItem) {
+      setFormData({
+        ...initialFormData,
+        category: categories[0] || "",
+      });
+      setPreviewImage(null);
+    }
+  }, [isModalOpen, selectedItem, categories]);
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -122,7 +157,7 @@ const MenuManagement = () => {
         setError(null);
       } catch (err) {
         setError("Error processing image. Please try again.");
-        console.error("Error processing image:", err);
+        // console.error("Error processing image:", err);
       }
     }
   };
@@ -132,17 +167,34 @@ const MenuManagement = () => {
     setLoading(true);
     setError(null);
 
+    // Frontend validation
+    const requiredFields = {
+      name: "Name",
+      category: "Category",
+      price: "Price",
+      description: "Description",
+      spiceLevel: "Spice Level",
+    };
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(([key]) => !formData[key])
+      .map(([, label]) => label);
+
+    if (missingFields.length > 0) {
+      setError(`Required fields missing: ${missingFields.join(", ")}`);
+      setLoading(false);
+      return;
+    }
+
     try {
       // Validate image size after compression
       if (formData.image && formData.image.length > 1024 * 1024 * 2) {
-        // 2MB limit after compression
         throw new Error(
           "Compressed image is still too large. Please use a smaller image."
         );
       }
 
       if (selectedItem) {
-        // Update existing menu item
         const response = await api.put(
           `/api/v1/admin/menu/${selectedItem._id}`,
           formData
@@ -153,7 +205,6 @@ const MenuManagement = () => {
           )
         );
       } else {
-        // Add new menu item
         const response = await api.post("/api/v1/admin/menu", formData);
         setMenuItems((prev) => [...prev, response.data.menuItem]);
       }
@@ -166,16 +217,11 @@ const MenuManagement = () => {
           ? "Failed to update menu item"
           : "Failed to add menu item");
       setError(errorMessage);
-      console.error("Error submitting menu item:", err);
     } finally {
       setLoading(false);
     }
   };
 
-
-
-
-  
   const handleEdit = (item) => {
     setSelectedItem(item);
     setFormData(item);
@@ -197,7 +243,7 @@ const MenuManagement = () => {
       setError(null);
     } catch (err) {
       setError("Failed to update item status");
-      console.error("Error toggling status:", err);
+      // console.error("Error toggling status:", err);
     }
   };
 
@@ -213,15 +259,43 @@ const MenuManagement = () => {
         setError(null);
       } catch (err) {
         setError("Failed to delete menu item");
-        console.error("Error deleting menu item:", err);
+        // console.error("Error deleting menu item:", err);
       }
+    }
+  };
+
+  const handleAddCategory = async (newCategory) => {
+    try {
+      const response = await api.post("/api/v1/admin/menu/categories", {
+        categories: [newCategory],
+      });
+      setCategories(response.data.categories);
+    } catch (err) {
+      throw new Error(err.response?.data?.error || "Failed to add category");
+    }
+  };
+
+  const handleDeleteCategory = async (category) => {
+    try {
+      const response = await api.delete(
+        `/api/v1/admin/menu/categories/${encodeURIComponent(category)}`
+      );
+      setCategories(response.data.categories);
+    } catch (err) {
+      // Properly extract the error message from the response
+      const errorMessage =
+        err.response?.data?.error || "Failed to delete category";
+      throw new Error(errorMessage);
     }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedItem(null);
-    setFormData(initialFormData);
+    setFormData({
+      ...initialFormData,
+      category: categories[0] || "", // Ensure fallback for empty categories
+    });
     setPreviewImage(null);
   };
 
@@ -233,23 +307,93 @@ const MenuManagement = () => {
       item.description.toLowerCase().includes(searchLower) ||
       item.dietary?.some((diet) => diet.toLowerCase().includes(searchLower));
 
+    // Category filter
+    const matchesCategory =
+      selectedCategory === "all" || item.category === selectedCategory;
+
+    // Active filter
+    let matchesActiveFilter = true;
     switch (activeFilter) {
       case "available":
-        return matchesSearch && item.isAvailable;
+        matchesActiveFilter = item.isAvailable;
+        break;
       case "unavailable":
-        return matchesSearch && !item.isAvailable;
+        matchesActiveFilter = !item.isAvailable;
+        break;
       case "veg":
-        return matchesSearch && item.isVeg;
+        matchesActiveFilter = item.isVeg;
+        break;
       case "nonveg":
-        return matchesSearch && !item.isVeg;
+        matchesActiveFilter = !item.isVeg;
+        break;
       case "bestseller":
-        return matchesSearch && item.popularity?.includes("Best Seller");
+        matchesActiveFilter = item.popularity?.includes("Best Seller");
+        break;
       case "trending":
-        return matchesSearch && item.popularity?.includes("Trending Now");
-      default:
-        return matchesSearch;
+        matchesActiveFilter = item.popularity?.includes("Trending Now");
+        break;
     }
+
+    return matchesSearch && matchesCategory && matchesActiveFilter;
   });
+
+  const getEmptyStateMessage = () => {
+    if (categories.length === 0) {
+      return (
+        <div className="text-center py-16 px-4">
+          <div className="max-w-md mx-auto">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              Welcome to Menu Management!
+            </h2>
+            <p className="text-gray-600 mb-8">
+              To get started with your menu, you'll need to:
+            </p>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <ol className="list-decimal list-inside text-left space-y-4">
+                <li className="text-gray-700">
+                  First, create some menu categories (e.g., Appetizers, Main
+                  Course, Desserts)
+                </li>
+                <li className="text-gray-700">
+                  Then add menu items to your categories
+                </li>
+              </ol>
+            </div>
+            <button
+              onClick={() => setIsCategoryModalOpen(true)}
+              className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Create Your First Category
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (menuItems.length === 0) {
+      return (
+        <div className="text-center py-16 px-4">
+          <div className="max-w-md mx-auto">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              Ready to Add Menu Items
+            </h2>
+            <p className="text-gray-600 mb-8">
+              You have categories set up. Now it's time to add some delicious
+              items to your menu!
+            </p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Add Your First Menu Item
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -266,6 +410,10 @@ const MenuManagement = () => {
           onAddNew={() => setIsModalOpen(true)}
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
+          onAddNewCategory={() => setIsCategoryModalOpen(true)}
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
         />
 
         {loading && (
@@ -274,25 +422,35 @@ const MenuManagement = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {!loading && filteredItems.length > 0
-            ? filteredItems.map((item) => (
-                <MenuItemCard
-                  key={item._id}
-                  item={item}
-                  onEdit={handleEdit}
-                  onToggleStatus={handleToggleStatus}
-                  onDelete={handleDelete}
-                />
-              ))
-            : !loading && (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500 text-lg">
-                    No menu items found matching your criteria.
-                  </p>
-                </div>
-              )}
-        </div>
+        {getEmptyStateMessage() || (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {!loading && filteredItems.length > 0
+              ? filteredItems.map((item) => (
+                  <MenuItemCard
+                    key={item._id}
+                    item={item}
+                    onEdit={handleEdit}
+                    onToggleStatus={handleToggleStatus}
+                    onDelete={handleDelete}
+                  />
+                ))
+              : !loading && (
+                  <div className="col-span-full text-center py-12">
+                    <p className="text-gray-500 text-lg">
+                      No menu items found matching your criteria.
+                    </p>
+                  </div>
+                )}
+          </div>
+        )}
+
+        <CategoryDialog
+          isOpen={isCategoryModalOpen}
+          onClose={() => setIsCategoryModalOpen(false)}
+          categories={categories}
+          onAddCategory={handleAddCategory}
+          onDeleteCategory={handleDeleteCategory}
+        />
 
         <MenuItemModal
           isOpen={isModalOpen}
@@ -304,6 +462,7 @@ const MenuManagement = () => {
           selectedItem={selectedItem}
           previewImage={previewImage}
           loading={loading}
+          categories={categories} // Pass categories to modal
         />
       </div>
     </div>

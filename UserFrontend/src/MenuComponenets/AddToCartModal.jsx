@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRecoilState } from "recoil";
-import { selectedItemState } from './store/atoms';
+import { selectedItemState } from "./store/atoms";
 
 const AddToCartModal = ({ addToCart }) => {
   const [selectedItem, setSelectedItem] = useRecoilState(selectedItemState);
@@ -13,17 +13,24 @@ const AddToCartModal = ({ addToCart }) => {
     setCustomizations({});
   }, [selectedItem]);
 
-  // If no item is selected, don't render the modal
-  if (!selectedItem) return null;
+  const handleClose = () => setSelectedItem(null);
 
   const handleAdd = () => {
     addToCart(selectedItem, customizations, quantity);
-    setSelectedItem(null); // Close modal after adding to cart
+    handleClose();
   };
 
+  if (!selectedItem) return null;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleClose}
+    >
+      <div
+        className="bg-white rounded-lg p-6 max-w-md w-full mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-[#333333] font-semibold text-lg mb-4">
           {selectedItem.name}
         </h3>
@@ -77,7 +84,7 @@ const AddToCartModal = ({ addToCart }) => {
 
         <div className="flex justify-end gap-4">
           <button
-            onClick={() => setSelectedItem(null)}
+            onClick={handleClose}
             className="px-4 py-2 text-[#333333] hover:bg-[#F4F1DE] rounded-lg"
           >
             Cancel

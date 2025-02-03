@@ -1,9 +1,20 @@
 import React, { useState, useRef, useEffect } from "react";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
+import { Plus } from "lucide-react";
 import Button from "./Button";
 import OrderStats from "./OrderStats";
 import OrderTable from "./OrderTable";
 import OrderDetails from "./OrderDetails";
+import CreateOrder from "./CreateOrders";
+
+const EmptyState = ({ type, message }) => (
+  <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+    <h3 className="text-lg font-semibold text-gray-900 mb-2">{type}</h3>
+    <p className="text-gray-600 mb-4">{message}</p>
+  </div>
+);
 
 const UnifiedAdminOrder = () => {
   const [expandedOrder, setExpandedOrder] = useState(null);
@@ -15,35 +26,77 @@ const UnifiedAdminOrder = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [showRevenue, setShowRevenue] = useState(true);
   const [timeFilter, setTimeFilter] = useState("today");
-  const [statusFilter, setStatusFilter] = useState("Unpaid");
-  const printRef = useRef();
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
+  const [menuItems, setMenuItems] = useState([]);
 
-  const TAX_RATE = 0.18;
+  const printRef = useRef();
+  const pollingIntervalRef = useRef(null);
 
   // Helper function to check if a date falls within the selected time range
-  const isDateInRange = (date) => {
-    const orderDate = new Date(date);
+  const isDateInRange = (dateStr) => {
+    const orderDate = new Date(dateStr);
     const now = new Date();
 
-    if (timeFilter === "today") {
-      const startOfDay = new Date(now);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(now);
-      endOfDay.setHours(23, 59, 59, 999);
-      return orderDate >= startOfDay && orderDate <= endOfDay;
-    } else if (timeFilter === "week") {
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-      startOfWeek.setHours(0, 0, 0, 0);
-      return orderDate >= startOfWeek;
-    } else if (timeFilter === "month") {
-      const startOfMonth = new Date(now);
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      return orderDate >= startOfMonth;
+    // Reset time part of now to start of day
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    switch (timeFilter) {
+      case "today": {
+        const startOfDay = today;
+        const endOfDay = new Date(today);
+        endOfDay.setHours(23, 59, 59, 999);
+        return orderDate >= startOfDay && orderDate <= endOfDay;
+      }
+      case "yesterday": {
+        const startOfYesterday = new Date(today);
+        startOfYesterday.setDate(today.getDate() - 1);
+        const endOfYesterday = new Date(startOfYesterday);
+        endOfYesterday.setHours(23, 59, 59, 999);
+        return orderDate >= startOfYesterday && orderDate <= endOfYesterday;
+      }
+      case "week": {
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay()); // Start from Sunday
+        startOfWeek.setHours(0, 0, 0, 0);
+        return orderDate >= startOfWeek;
+      }
+      case "month": {
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        return orderDate >= startOfMonth;
+      }
+      case "all":
+        return true;
+      default:
+        return true;
     }
-    return true; // For "all" time filter
   };
+
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(
+          "http://localhost:3000/api/v1/admin/menu",
+          {
+            headers: {
+              Authorization: localStorage.getItem("authorization"),
+            },
+          }
+        );
+        setMenuItems(response.data.menuItems);
+        setError(null);
+      } catch (err) {
+        setError("Failed to fetch menu items");
+        console.error("Error fetching menu items:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMenuItems();
+  }, []);
 
   // Fetch restaurant details
   const fetchRestaurantDetails = async () => {
@@ -60,6 +113,7 @@ const UnifiedAdminOrder = () => {
       const { restaurant } = response.data;
       setRestaurantInfo({
         name: restaurant.name,
+        tax: restaurant.tax,
         address: restaurant.address,
         phone: restaurant.contact,
         email: restaurant.description,
@@ -70,6 +124,11 @@ const UnifiedAdminOrder = () => {
       console.error("Error fetching restaurant details:", error);
       setError("Failed to load restaurant details");
     }
+  };
+
+  // Helper function to get current tax rate
+  const getCurrentTaxRate = () => {
+    return restaurantInfo?.tax ? parseFloat(restaurantInfo.tax) : 0;
   };
 
   // Fetch orders
@@ -95,13 +154,18 @@ const UnifiedAdminOrder = () => {
           name: item.name,
           quantity: item.quantity,
           price: item.price,
+          status: item.status,
           spiceLevel: item.spiceLevel,
+
+          image: item.image,
         })),
         customerName: order.customerName,
         paymentStatus: order.paymentStatus,
+        type: order.type,
       }));
 
       setOrders(formattedOrders);
+      // console.log(formattedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
       setError("Failed to load orders");
@@ -109,7 +173,22 @@ const UnifiedAdminOrder = () => {
   };
 
   useEffect(() => {
-    fetchOrders();
+    // Start polling orders every 10 seconds
+    const startPolling = () => {
+      pollingIntervalRef.current = setInterval(() => {
+        fetchOrders();
+      }, 3000);
+    };
+
+    // Start polling when component mounts
+    startPolling();
+
+    // Clean up polling interval when component unmounts
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
   }, []);
 
   // Initial data fetch
@@ -131,7 +210,16 @@ const UnifiedAdminOrder = () => {
 
   // Get orders filtered by date range
   const getDateFilteredOrders = () => {
-    return orders.filter((order) => isDateInRange(order.createdAt));
+    return orders.filter((order) => {
+      // Add console.log for debugging
+      const isInRange = isDateInRange(order.createdAt);
+      // console.log("Order:", {
+      //   date: new Date(order.createdAt),
+      //   timeFilter,
+      //   isInRange,
+      // });
+      return isInRange;
+    });
   };
 
   // Get orders filtered by both date and payment status
@@ -157,10 +245,11 @@ const UnifiedAdminOrder = () => {
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   };
 
+  // Modify calculateTax function to use the tax rate from restaurantInfo
   const calculateTax = (subtotal) => {
-    return subtotal * TAX_RATE;
+    const taxRate = getCurrentTaxRate();
+    return subtotal * taxRate;
   };
-
   const handleCustomerNameChange = async (orderId, newName) => {
     try {
       // Get current order items
@@ -309,65 +398,21 @@ const UnifiedAdminOrder = () => {
     }
   };
 
-  const handleAddItem = async () => {
-    if (expandedOrder) {
-      const newItem = {
-        id: Date.now().toString(),
-        name: "",
-        quantity: 1,
-        price: 0,
-        spiceLevel: "Medium",
-      };
-
-      try {
-        const response = await axios.patch(
-          `http://localhost:3000/api/v1/admin/order/${expandedOrder.id}`,
-          {
-            action: "addItem",
-            item: {
-              itemId: newItem.id,
-              name: newItem.name,
-              quantity: newItem.quantity,
-              price: newItem.price,
-              spiceLevel: newItem.spiceLevel,
-            },
-          },
-          {
-            headers: {
-              Authorization: localStorage.getItem("authorization"),
-            },
-          }
-        );
-
-        if (response.data.success) {
-          setExpandedOrder((prev) => ({
-            ...prev,
-            items: [...prev.items, newItem],
-          }));
-          setHasChanges(true);
-        }
-      } catch (error) {
-        console.error("Error adding item:", error);
-        alert(
-          "Failed to add item: " +
-            (error.response?.data?.error || error.message)
-        );
-      }
-    }
-  };
-
   const handleSaveChanges = async () => {
     try {
       const subtotal = calculateSubtotal(expandedOrder.items);
       const total = subtotal + calculateTax(subtotal);
 
+      // Preserve all existing fields for each item
       const formattedItems = expandedOrder.items.map((item) => ({
-        itemId: item.id,
+        itemId: item.id || item.itemId, // Handle both id and itemId
         name: item.name,
         price: item.price,
         quantity: item.quantity,
         spiceLevel: item.spiceLevel,
-        status: "Pending", // Preserve item status
+        status: item.status || "Pending",
+        image: item.image, // Preserve image field
+        _id: item._id, // Preserve _id field if it exists
       }));
 
       const response = await axios.patch(
@@ -375,7 +420,8 @@ const UnifiedAdminOrder = () => {
         {
           action: "bulkEdit",
           items: formattedItems,
-          totalAmount: total, // Include total amount
+          customerName: expandedOrder.customerName,
+          totalAmount: total,
         },
         {
           headers: {
@@ -475,41 +521,98 @@ const UnifiedAdminOrder = () => {
       }
     } catch (error) {
       console.error("Error deleting order:", error);
-      alert(
-        "Failed to delete order: " +
-          (error.response?.data?.error || error.message)
-      );
+      // console.log(
+      //   "Failed to delete order: " +
+      //     (error.response?.data?.error || error.message)
+      // );
     }
   };
 
+  const handleAddOrderClick = () => {
+    setShowCreateOrder(true);
+  };
+
+  const handleOrderCreated = (newOrder) => {
+    setOrders((prevOrders) => [newOrder, ...prevOrders]);
+    setShowCreateOrder(false);
+    fetchOrders(); // Refresh the orders list
+  };
+
   const handleExportOrders = () => {
+    // Get date filtered orders
+    const dateFiltered = getDateFilteredOrders();
+
+    // Filter for only paid orders
+    const paidOrders = dateFiltered.filter(
+      (order) => order.paymentStatus === "Paid"
+    );
+
+    // Sort orders by date (most recent first)
+    const sortedOrders = paidOrders.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    // Define headers with more detailed information
     const headers = [
+      "Date",
+      "Time",
       "Order ID",
-      "Table",
-      "Customer",
-      "Status",
-      "Amount",
-      "Created At",
+      "Customer Name",
+      "Table/Parcel",
+      "Items",
+      "Subtotal",
+      "Tax",
+      "Total Amount",
+      "Payment Status",
     ];
+
+    // Create CSV data with formatted values
     const csvData = [
       headers.join(","),
-      ...orders.map((order) =>
-        [
+      ...sortedOrders.map((order) => {
+        const date = new Date(order.createdAt);
+        const formattedDate = date.toLocaleDateString();
+        const formattedTime = date.toLocaleTimeString();
+
+        // Format table/parcel display
+        const tableDisplay =
+          order.type === "Parcel" ? "Parcel" : `T-${order.tableNumber}`;
+
+        // Calculate financial values
+        const subtotal = calculateSubtotal(order.items);
+        const tax = calculateTax(subtotal);
+        const total = subtotal + tax;
+
+        // Format items list
+        const itemsList = order.items
+          .map((item) => `${item.quantity}x ${item.name}`)
+          .join("; ");
+
+        return [
+          formattedDate,
+          formattedTime,
           order.id,
-          order.tableNumber,
-          order.customerName,
-          order.status,
-          order.amount.toFixed(2),
-          new Date(order.createdAt).toLocaleString(),
-        ].join(",")
-      ),
+          order.customerName || "N/A",
+          tableDisplay,
+          `"${itemsList}"`, // Quote items list to handle commas
+          subtotal.toFixed(2),
+          tax.toFixed(2),
+          total.toFixed(2),
+          order.paymentStatus,
+        ].join(",");
+      }),
     ].join("\n");
 
+    // Generate filename with current date
+    const currentDate = new Date().toISOString().split("T")[0];
+    const filename = `orders_export_${currentDate}.csv`;
+
+    // Create and trigger download
     const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", "orders.csv");
+    link.setAttribute("download", filename);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -517,25 +620,40 @@ const UnifiedAdminOrder = () => {
   };
 
   const filteredOrders = getFilteredOrders().filter((order) => {
-    const matchesSearch =
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.tableNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    // If there's no search term, return all orders
+    if (!searchTerm) return true;
+
+    const searchLower = searchTerm.toLowerCase();
+
+    // Safely check each field with null coalescing
+    return (
+      (order?.id?.toString() || "").toLowerCase().includes(searchLower) ||
+      (order?.tableNumber?.toString() || "")
+        .toLowerCase()
+        .includes(searchLower) ||
+      (order?.customerName?.toString() || "")
+        .toLowerCase()
+        .includes(searchLower)
+    );
   });
 
   const dateFilteredOrders = getDateFilteredOrders();
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        Loading...
+      <div className="min-h-screen bg-gray-100">
+        <header className="bg-white shadow-sm">
+          <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <h1 className="text-2xl font-bold text-gray-900">
+              Order Management
+            </h1>
+          </div>
+        </header>
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <p className="text-gray-600">Loading...</p>
+        </div>
       </div>
     );
-  }
-
-  if (error) {
-    return <div className="text-red-600 text-center p-4">{error}</div>;
   }
 
   return (
@@ -547,92 +665,165 @@ const UnifiedAdminOrder = () => {
       </header>
 
       <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <OrderStats
-          orders={dateFilteredOrders} // Use date filtered orders for stats
-          showRevenue={showRevenue}
-          setShowRevenue={setShowRevenue}
-          TAX_RATE={TAX_RATE}
-        />
-
-        <div className="mb-6 flex flex-wrap items-center gap-4">
-          {/* Search Bar */}
-          <input
-            type="text"
-            placeholder="Search orders..."
-            className="p-2 border rounded"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+        {error === "Failed to fetch menu items" ? (
+          <EmptyState
+            type="No Menu Items Found"
+            message="You need to create menu items before you can manage orders. Please set up your menu first."
           />
-
-          {/* Time Filter Dropdown */}
-          <select
-            className="p-2 border rounded bg-white"
-            value={timeFilter}
-            onChange={(e) => setTimeFilter(e.target.value)}
-          >
-            <option value="today">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="all">All Orders</option>
-          </select>
-
-          {/* Status Filter Buttons */}
-          <div className="flex gap-2">
-            <Button
-              variant={statusFilter === "all" ? "default" : "ghost"}
-              onClick={() => setStatusFilter("all")}
-              className={`px-6 py-1 ${
-                statusFilter === "all"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700"
-              }`}
-            >
-              All
-            </Button>
-            <Button
-              variant={statusFilter === "Unpaid" ? "default" : "ghost"}
-              onClick={() => setStatusFilter("Unpaid")}
-              className={`px-6 py-1 ${
-                statusFilter === "Unpaid"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700"
-              }`}
-            >
-              Unpaid
-            </Button>
-            <Button
-              variant={statusFilter === "Paid" ? "default" : "ghost"}
-              onClick={() => setStatusFilter("Paid")}
-              className={`px-6 py-1 ${
-                statusFilter === "Paid"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700"
-              }`}
-            >
-              Paid
-            </Button>
+        ) : error ? (
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <p className="text-red-600 text-center">{error}</p>
           </div>
-        </div>
+        ) : (
+          <>
+            {orders.length >= 0 ? (
+              <>
+                <OrderStats
+                  orders={dateFilteredOrders}
+                  showRevenue={showRevenue}
+                  setShowRevenue={setShowRevenue}
+                  TAX_RATE={getCurrentTaxRate()}
+                />
 
-        <OrderTable
-          filteredOrders={filteredOrders}
-          calculateTotalWithTax={calculateTotalWithTax}
-          handleMarkAsCompleted={handleMarkAsCompleted}
-          handleCheckout={handleCheckout}
-          setExpandedOrder={setExpandedOrder}
-          handleDeleteOrder={handleDeleteOrder}
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                  {/* Keep existing search, filter controls */}
+                  <div className="flex flex-wrap gap-4">
+                    <input
+                      type="text"
+                      placeholder="Search orders..."
+                      className="p-2 border rounded"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+
+                    <select
+                      className="p-2 border rounded bg-white"
+                      value={timeFilter}
+                      onChange={(e) => setTimeFilter(e.target.value)}
+                    >
+                      <option value="today">Today</option>
+                      <option value="yesterday">Yesterday</option>
+                      <option value="week">This Week</option>
+                      <option value="month">This Month</option>
+                      <option value="all">All Orders</option>
+                    </select>
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant={statusFilter === "all" ? "default" : "ghost"}
+                        onClick={() => setStatusFilter("all")}
+                        className={`px-6 py-1 ${
+                          statusFilter === "all"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        All
+                      </Button>
+                      <Button
+                        variant={
+                          statusFilter === "Unpaid" ? "default" : "ghost"
+                        }
+                        onClick={() => setStatusFilter("Unpaid")}
+                        className={`px-6 py-1 ${
+                          statusFilter === "Unpaid"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        Unpaid
+                      </Button>
+                      <Button
+                        variant={statusFilter === "Paid" ? "default" : "ghost"}
+                        onClick={() => setStatusFilter("Paid")}
+                        className={`px-6 py-1 ${
+                          statusFilter === "Paid"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        Paid
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-4 mr-4">
+                    <div className="flex items-center space-x-2 text-gray-800">
+                      <div className="bg-yellow-200 h-4 w-4 border-gray-500 border"></div>
+                      <span>Pending</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-gray-800">
+                      <div className="bg-blue-200  h-4 w-4 border-gray-500 border"></div>
+                      <span>In Progress</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-gray-800">
+                      <div className="bg-green-200 h-4 w-4 border-gray-500 border"></div>
+                      <span>Completed</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    onClick={handleAddOrderClick}
+                    className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                  >
+                    <Plus /> Add Order
+                  </Button>
+                </div>
+
+                {filteredOrders.length > 0 ? (
+                  <OrderTable
+                    filteredOrders={filteredOrders}
+                    calculateTotalWithTax={calculateTotalWithTax}
+                    handleMarkAsCompleted={handleMarkAsCompleted}
+                    handleCheckout={handleCheckout}
+                    setExpandedOrder={setExpandedOrder}
+                    handleDeleteOrder={handleDeleteOrder}
+                  />
+                ) : (
+                  <EmptyState
+                    type="No Matching Orders"
+                    message="No orders match your current filters. Try adjusting your search or filter criteria."
+                  />
+                )}
+              </>
+            ) : (
+              <EmptyState
+                type="No Orders Yet"
+                message="You haven't received any orders yet. Create your first order or wait for customers to place orders."
+                actionText="Create Order"
+                onAction={handleAddOrderClick}
+              />
+            )}
+
+            {/* Keep existing bottom section */}
+            <div className="mt-6 flex gap-4">
+              {orders.length > 0 && (
+                <Button
+                  variant="ghost"
+                  onClick={handleExportOrders}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Export Orders
+                </Button>
+              )}
+            </div>
+          </>
+        )}
+
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
         />
 
-        <div className="mt-6 flex gap-4">
-          <Button
-            variant="ghost"
-            onClick={handleExportOrders}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            Export Orders
-          </Button>
-        </div>
-
+        {/* Keep existing modal components */}
         {expandedOrder && restaurantInfo && (
           <OrderDetails
             expandedOrder={expandedOrder}
@@ -641,15 +832,25 @@ const UnifiedAdminOrder = () => {
             handleSpiceLevelChange={handleSpiceLevelChange}
             handleQuantityChange={handleQuantityChange}
             handleDeleteItem={handleDeleteItem}
-            handleAddItem={handleAddItem}
             handleSaveChanges={handleSaveChanges}
             handlePrint={handlePrint}
             hasChanges={hasChanges}
             restaurantInfo={restaurantInfo}
             calculateSubtotal={calculateSubtotal}
             calculateTax={calculateTax}
-            TAX_RATE={TAX_RATE}
+            TAX_RATE={getCurrentTaxRate()}
             printRef={printRef}
+            availableMenuItems={menuItems}
+          />
+        )}
+
+        {showCreateOrder && (
+          <CreateOrder
+            onClose={() => setShowCreateOrder(false)}
+            onCreateOrder={handleOrderCreated}
+            restaurantInfo={restaurantInfo}
+            availableMenuItems={menuItems}
+            TAX_RATE={getCurrentTaxRate()}
           />
         )}
       </main>

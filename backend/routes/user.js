@@ -8,6 +8,7 @@ const {
     getMenuItemById,
     createSession,
     createOrder,
+    deleteOrderItem,
     placeOrder,
     getOrder,
     updateOrder,
@@ -27,7 +28,9 @@ router.get('/menu/item/:menuItemId', getMenuItemById);
 
 router.post('/session', createSession);
 router.post('/order', createOrder);
+router.delete('/order/:tableNumber/:itemId', deleteOrderItem);
 router.get('/order/:restaurantId/:tableNumber', getOrder);
+
 
 //user scans Qn get redirectd to restro menu and query of restroId and tableNo. as https://yourdomain.com/menu?restaurantId=${restaurantId}&table=${tableNumber}
 

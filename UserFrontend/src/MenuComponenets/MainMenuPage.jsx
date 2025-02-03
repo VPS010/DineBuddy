@@ -174,18 +174,16 @@ const MenuPage = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Header cartCount={cart.length} />
-      <div className="flex flex-1">
-        <CategoryMenu categories={categories} />
-        <main className="flex flex-1 justify-center">
-          <MenuGrid menuItems={menuData} onItemClick={setSelectedItem} />
-        </main>
-        <Cart
-          updateCartItemQuantity={updateCartItemQuantity}
-          removeFromCart={removeFromCart}
-          tableNumber={tableNumber}
-          restaurantId={restaurantId}
-        />
-      </div>
+      <CategoryMenu categories={categories} />
+      <main className="flex flex-1 justify-center">
+        <MenuGrid menuItems={menuData} onItemClick={setSelectedItem} />
+      </main>
+      <Cart
+        updateCartItemQuantity={updateCartItemQuantity}
+        removeFromCart={removeFromCart}
+        tableNumber={tableNumber}
+        restaurantId={restaurantId}
+      />
       {selectedItem && (
         <AddToCartModal
           item={selectedItem}

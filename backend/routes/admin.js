@@ -6,25 +6,28 @@ const { signupAdmin,
     updateAdminProfile,
     getRestaurant,
     updateRestaurant,
+    menuCategories,
     addMenuItem,
     getMenu,
     getMenuItem,
     updateMenuItem,
     deleteMenuItem,
     generateQRCode,
+    createAdminOrder,
     getOrders,
-    getOrder,
-    updateOrderStatus,
+    CheckTableStatus,
+    getKitchenOrders,
+    updateOrderItemStatus,
+    getMenuCategories,
+    deleteCategory,
     getAnalytics,
     activeOrders,
     allSessions,
     activeSessions,
-    allOrders,
     editOrder,
-    closeSession,
     deleteOrder,
     orderStatus,
-    orderPay
+    orderPay,
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -34,10 +37,15 @@ router.post('/signin', loginAdmin);
 router.get('/profile', protect, getAdminProfile);
 router.put('/profile', protect, updateAdminProfile);
 
+router.post('/qr/generate', protect, generateQRCode);
 
 // Restaurant Routes
 router.put('/restaurant', protect, updateRestaurant);      // Update restaurant info
 router.get('/restaurant', protect, getRestaurant);         // Get restaurant info
+
+router.post('/menu/categories', protect, menuCategories);
+router.get('/menu/categories', protect, getMenuCategories);
+router.delete('/menu/categories/:category', protect, deleteCategory);
 
 
 router.post('/menu', protect, addMenuItem);
@@ -47,13 +55,18 @@ router.put('/menu/:id', protect, updateMenuItem);
 router.delete('/menu/:id', protect, deleteMenuItem);
 
 
-router.post('/qr/generate', protect, generateQRCode);
 
 router.get('/orders', protect, getOrders);
+router.post('/orders', protect, createAdminOrder);
 router.patch('/order/:id', protect, editOrder);
 router.delete('/order/:id', protect, deleteOrder);
+router.get("/order/:tableNumber", protect, CheckTableStatus);
 router.put('/order/complete/:orderId', protect, orderStatus);
 router.put('/order/pay/:orderId', protect, orderPay);
+
+
+router.get('/orders/kitchen', protect, getKitchenOrders);
+router.put('/orders/:orderId/:itemId', protect, updateOrderItemStatus);
 
 
 // router.get('/orders', getOrders);

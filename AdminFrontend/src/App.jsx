@@ -2,13 +2,13 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Import Components for General
-import LandingPage from "./pages/LandingPage";
+import LandingPage from "./DashboardComponents/LandingPage/mainLandingPage";
 
 // Import Components for Admin
 import AdminLogin from "./pages/AdminLogin";
 import AdminSignup from "./pages/AdminSignup";
 import DashboardPage from "./pages/DashboardPage";
-import OrdersPageDesign from "./DashboardComponents/Orders"
+import KitchenPage from "./pages/KitchenPage";
 
 // Import Components for Customers
 // import MenuPage from './pages/MenuPage';
@@ -38,7 +38,7 @@ const App = () => {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/signup" element={<AdminSignup />} />
         <Route path="/admin/dashboard" element={<DashboardPage />} />
-        <Route path="/admin/o" element={<OrdersPageDesign />} />
+        <Route path="/admin/kitchen" element={<KitchenPage />} />
 
         {/* Customer Routes */}
         {/* <Route path="/user/menu/:restaurantId" element={<MenuPage />} /> */}
