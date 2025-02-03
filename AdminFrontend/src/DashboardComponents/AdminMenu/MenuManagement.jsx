@@ -11,22 +11,12 @@ const MenuManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedItem, setSelectedItem] = useState(null);
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [error, setError] = useState(null);
-  const [formData, setFormData] = useState(null);
-
-
-  const token = localStorage.getItem("authorization");
-  const api = axios.create({
-    baseURL: "http://localhost:3000",
-    headers: {
-      Authorization: token,
-    },
-  });
-
   const initialFormData = {
     name: "",
     category: "", // Will be set to first category once loaded
@@ -39,7 +29,15 @@ const MenuManagement = () => {
     isAvailable: true,
     image: "/api/placeholder/400/400",
   };
+  const [formData, setFormData] = useState(initialFormData);
 
+  const token = localStorage.getItem("authorization");
+  const api = axios.create({
+    baseURL: "http://localhost:3000",
+    headers: {
+      Authorization: token,
+    },
+  });
 
   // Fetch categories
   useEffect(() => {
@@ -47,17 +45,16 @@ const MenuManagement = () => {
       try {
         const response = await api.get("/api/v1/admin/menu/categories");
         setCategories(response.data.categories);
-        // Update initial form data with first category
-        if (response.data.categories.length > 0) {
-          setFormData((prev) => ({
-            ...prev,
-            category: response.data.categories[0],
-          }));
-        }
+
+        // Update formData only if it hasn't been set yet
+        setFormData((prev) => ({
+          ...(prev || initialFormData), // Handle initial null state
+          category: response.data.categories[0] || "",
+        }));
+
         setError(null);
       } catch (err) {
         setError("Failed to fetch categories");
-        // console.error("Error fetching categories:", err);
       }
     };
 
@@ -65,25 +62,24 @@ const MenuManagement = () => {
   }, []);
 
   // Fetch menu items
-// Fetch menu items
-useEffect(() => {
-  const fetchMenuItems = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get("/api/v1/admin/menu");
-      setMenuItems(response.data.menuItems);
-      setError(null);
-    } catch (err) {
-      setError("Failed to fetch menu items");
-      console.error("Error fetching menu items:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fetch menu items
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get("/api/v1/admin/menu");
+        setMenuItems(response.data.menuItems);
+        setError(null);
+      } catch (err) {
+        setError("Failed to fetch menu items");
+        console.error("Error fetching menu items:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchMenuItems();
-}, []);
-
+    fetchMenuItems();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -135,6 +131,16 @@ useEffect(() => {
     });
   };
 
+  useEffect(() => {
+    if (isModalOpen && !selectedItem) {
+      setFormData({
+        ...initialFormData,
+        category: categories[0] || "",
+      });
+      setPreviewImage(null);
+    }
+  }, [isModalOpen, selectedItem, categories]);
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -167,7 +173,7 @@ useEffect(() => {
       category: "Category",
       price: "Price",
       description: "Description",
-      spiceLevel: "Spice Level"
+      spiceLevel: "Spice Level",
     };
 
     const missingFields = Object.entries(requiredFields)
@@ -183,7 +189,9 @@ useEffect(() => {
     try {
       // Validate image size after compression
       if (formData.image && formData.image.length > 1024 * 1024 * 2) {
-        throw new Error("Compressed image is still too large. Please use a smaller image.");
+        throw new Error(
+          "Compressed image is still too large. Please use a smaller image."
+        );
       }
 
       if (selectedItem) {
@@ -213,7 +221,6 @@ useEffect(() => {
       setLoading(false);
     }
   };
-
 
   const handleEdit = (item) => {
     setSelectedItem(item);
@@ -285,21 +292,10 @@ useEffect(() => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedItem(null);
-    // Reset form to initial state with first category
-    if (categories.length > 0) {
-      setFormData({
-        name: "",
-        category: categories[0],
-        price: "",
-        description: "",
-        dietary: [],
-        isVeg: false,
-        spiceLevel: "Medium",
-        popularity: [],
-        isAvailable: true,
-        image: "/api/placeholder/400/400",
-      });
-    }
+    setFormData({
+      ...initialFormData,
+      category: categories[0] || "", // Ensure fallback for empty categories
+    });
     setPreviewImage(null);
   };
 
@@ -311,22 +307,34 @@ useEffect(() => {
       item.description.toLowerCase().includes(searchLower) ||
       item.dietary?.some((diet) => diet.toLowerCase().includes(searchLower));
 
+    // Category filter
+    const matchesCategory =
+      selectedCategory === "all" || item.category === selectedCategory;
+
+    // Active filter
+    let matchesActiveFilter = true;
     switch (activeFilter) {
       case "available":
-        return matchesSearch && item.isAvailable;
+        matchesActiveFilter = item.isAvailable;
+        break;
       case "unavailable":
-        return matchesSearch && !item.isAvailable;
+        matchesActiveFilter = !item.isAvailable;
+        break;
       case "veg":
-        return matchesSearch && item.isVeg;
+        matchesActiveFilter = item.isVeg;
+        break;
       case "nonveg":
-        return matchesSearch && !item.isVeg;
+        matchesActiveFilter = !item.isVeg;
+        break;
       case "bestseller":
-        return matchesSearch && item.popularity?.includes("Best Seller");
+        matchesActiveFilter = item.popularity?.includes("Best Seller");
+        break;
       case "trending":
-        return matchesSearch && item.popularity?.includes("Trending Now");
-      default:
-        return matchesSearch;
+        matchesActiveFilter = item.popularity?.includes("Trending Now");
+        break;
     }
+
+    return matchesSearch && matchesCategory && matchesActiveFilter;
   });
 
   const getEmptyStateMessage = () => {
@@ -384,16 +392,6 @@ useEffect(() => {
       );
     }
 
-    if (searchTerm || activeFilter !== "all") {
-      return (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">
-            No menu items found matching your criteria.
-          </p>
-        </div>
-      );
-    }
-
     return null;
   };
 
@@ -413,6 +411,9 @@ useEffect(() => {
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
           onAddNewCategory={() => setIsCategoryModalOpen(true)}
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
         />
 
         {loading && (

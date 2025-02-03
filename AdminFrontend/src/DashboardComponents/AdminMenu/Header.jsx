@@ -5,6 +5,9 @@ const MenuHeader = ({
   searchTerm,
   onSearchChange,
   onAddNewCategory,
+  categories,
+  selectedCategory,
+  onCategoryChange,
   onAddNew,
   activeFilter,
   onFilterChange,
@@ -41,7 +44,29 @@ const MenuHeader = ({
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-4">
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          onClick={() => onCategoryChange("all")}
+          className={`px-4 py-2 rounded-lg ${
+            selectedCategory === "all" ? "bg-gray-200" : "bg-gray-100"
+          }`}
+        >
+          All Categories
+        </button>
+        {categories.map((category) => (
+          <button
+            key={category}
+            onClick={() => onCategoryChange(category)}
+            className={`px-4 py-2 rounded-lg ${
+              selectedCategory === category ? "bg-blue-200" : "bg-gray-100"
+            }`}
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-4">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => onFilterChange("all")}
@@ -106,6 +131,7 @@ const MenuHeader = ({
             Trending
           </button>
         </div>
+        <div></div>
       </div>
     </div>
   );
