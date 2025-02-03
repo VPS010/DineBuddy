@@ -93,12 +93,12 @@ const GettingStartedGuide = () => {
             <li>Access the Geofence settings</li>
             <li>Search and find your place</li>
             <li>
-              Select your restaurant's building area (recommended to select more
-              3-4m extra area)
+              Select your restaurant's building area (recommended to select
+              3-4 meters extra area)
             </li>
             <li>Fine-tune the boundaries as needed</li>
             <li>
-              Save your settings to activate Your QRs to work in th selected
+              Save your settings to activate Your QRs to work in the selected
               area
             </li>
           </ul>

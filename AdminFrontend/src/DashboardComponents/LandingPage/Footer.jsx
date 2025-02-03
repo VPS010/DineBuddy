@@ -30,7 +30,7 @@ export const Footer = ({ handleEmailClick }) => (
           Revolutionizing dining experiences since 2025
         </p>
         <p className="text-beige-100 my-0 py-0">
-          © {new Date().getFullYear()} BiteBridge. All rights reserved.
+          © {new Date().getFullYear()} DineBuddy. All rights reserved.
         </p>
       </div>
 
