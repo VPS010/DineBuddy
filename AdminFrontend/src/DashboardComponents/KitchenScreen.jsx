@@ -214,53 +214,55 @@ const KitchenScreen = () => {
         </div>
       </header>
 
-      <main className="max-w-full mx-auto px-12 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
-          {/* Shortlisted Items Section */}
-          <div className="lg:col-span-2">
-            <h2 className="text-3xl font-semibold mb-4 ml-3">
-              In Progress Items
-            </h2>
-            <div className="columns-2 gap-4 space-y-4">
-              {shortlistedItems.map((item, index) => (
-                <div
-                  className="break-inside-avoid"
-                  key={`${item.name}-${item.spiceLevel}-${index}`}
-                >
-                  <ShortlistedItem
-                    name={item.name}
-                    quantity={item.quantity}
-                    spiceLevel={item.spiceLevel}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Orders Section */}
-          <div className="lg:col-span-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-3xl font-semibold ml-4">Active Orders</h2>
-              <div className="flex items-center space-x-4 mr-4">
-                <div className="flex items-center space-x-2 text-gray-800">
-                  <div className="bg-yellow-200 h-4 w-4 border-gray-500 border"></div>
-                  <span>Pending</span>
-                </div>
-                <div className="flex items-center space-x-2 text-gray-800">
-                  <div className="bg-blue-200  h-4 w-4 border-gray-500 border"></div>
-                  <span>In Progress</span>
-                </div>
-                <div className="flex items-center space-x-2 text-gray-800">
-                  <div className="bg-green-200 h-4 w-4 border-gray-500 border"></div>
-                  <span>Completed</span>
-                </div>
+      <main className="max-w-full mx-auto px-12 py-6 relative">
+        {/* Grid container and orders/shortlisted items content */}
+        <div className="relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+            {/* Shortlisted Items Section */}
+            <div className="lg:col-span-2">
+              <h2 className="text-3xl font-semibold mb-4 ml-3">
+                In Progress Items
+              </h2>
+              <div className="columns-2 gap-4 space-y-4">
+                {shortlistedItems.map((item, index) => (
+                  <div
+                    className="break-inside-avoid"
+                    key={`${item.name}-${item.spiceLevel}-${index}`}
+                  >
+                    <ShortlistedItem
+                      name={item.name}
+                      quantity={item.quantity}
+                      spiceLevel={item.spiceLevel}
+                    />
+                  </div>
+                ))}
               </div>
-              <div className="flex space-x-2">
-                {["all", "table", "parcel"].map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setActiveFilter(filter)}
-                    className={`
+            </div>
+
+            {/* Orders Section */}
+            <div className="lg:col-span-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-3xl font-semibold ml-4">Active Orders</h2>
+                <div className="flex items-center space-x-4 mr-4">
+                  <div className="flex items-center space-x-2 text-gray-800">
+                    <div className="bg-yellow-200 h-4 w-4 border-gray-500 border"></div>
+                    <span>Pending</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-gray-800">
+                    <div className="bg-blue-200  h-4 w-4 border-gray-500 border"></div>
+                    <span>In Progress</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-gray-800">
+                    <div className="bg-green-200 h-4 w-4 border-gray-500 border"></div>
+                    <span>Completed</span>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  {["all", "table", "parcel"].map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setActiveFilter(filter)}
+                      className={`
                       px-3 py-2 rounded-md text-md capitalize
                       ${
                         activeFilter === filter
@@ -268,27 +270,36 @@ const KitchenScreen = () => {
                           : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                       }
                     `}
-                  >
-                    {filter} Orders
-                  </button>
+                    >
+                      {filter} Orders
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="columns-3 gap-4 space-y-4">
+                {getFilteredOrders().map((order) => (
+                  <div className="break-inside-avoid" key={order._id}>
+                    <OrderCard
+                      order={order}
+                      onItemStatusUpdate={handleItemStatusUpdate}
+                      isParcel={order.type === "Parcel"}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
-
-            <div className="columns-3 gap-4 space-y-4">
-              {getFilteredOrders().map((order) => (
-                <div className="break-inside-avoid" key={order._id}>
-                  <OrderCard
-                    order={order}
-                    onItemStatusUpdate={handleItemStatusUpdate}
-                    isParcel={order.type === "Parcel"}
-                  />
-                </div>
-              ))}
-            </div>
           </div>
         </div>
+
+      
       </main>
+        {/* Watermark positioned behind the main grid content */}
+        <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-0">
+          <span className="text-green-800 text-9xl opacity-20 select-none">
+            DineBuddy
+          </span>
+        </div>
     </div>
   );
 };

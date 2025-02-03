@@ -13,7 +13,6 @@ export const PricingSection = () => {
       title: "Basic",
       price: 2999,
       features: [
-        "Up to 10 tables",
         "Basic Analytics",
         "Email Support",
         "QR Menu System",
@@ -24,7 +23,6 @@ export const PricingSection = () => {
       title: "Professional",
       price: 4999,
       features: [
-        "Up to 50 tables",
         "Advanced Analytics",
         "Priority Support",
         "Custom Branding",
@@ -36,7 +34,6 @@ export const PricingSection = () => {
       title: "Enterprise",
       price: "Custom",
       features: [
-        "Unlimited Tables",
         "Dedicated Support",
         "API Access",
         "Custom Integrations",
