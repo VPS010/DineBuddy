@@ -12,3 +12,6 @@ EXPOSE 5173
 
 
 CMD ["npm","run","dev"]
+
+
+LABEL org.opencontainers.image.source https://github.com/vps010/servit
