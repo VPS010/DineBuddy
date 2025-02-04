@@ -68,7 +68,7 @@ const AdminSignup = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/v1/admin/signup",
+        "https://dinebuddy.in/api/v1/admin/signup",
         user
       );
       const token = response.data.token;

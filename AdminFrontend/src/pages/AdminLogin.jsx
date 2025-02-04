@@ -56,7 +56,7 @@ const AdminLogin = () => {
     if (!validateForm()) return;
 
     axios
-      .post("http://localhost:3000/api/v1/admin/signin", user)
+      .post("https://dinebuddy.in/api/v1/admin/signin", user)
       .then((result) => {
         localStorage.setItem("authorization", `Bearer ${result.data.token}`);
         navigate("/admin/dashboard");

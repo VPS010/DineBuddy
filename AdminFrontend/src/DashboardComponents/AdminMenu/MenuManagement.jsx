@@ -33,7 +33,7 @@ const MenuManagement = () => {
 
   const token = localStorage.getItem("authorization");
   const api = axios.create({
-    baseURL: "http://localhost:3000",
+    baseURL: "https://dinebuddy.in",
     headers: {
       Authorization: token,
     },

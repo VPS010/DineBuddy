@@ -80,7 +80,7 @@ const LocationVerification = ({ onLocationVerified, onLocationDenied }) => {
     console.log("Redirecting to pre-booking page...");
     setShowPreBookDialog(false); // Hide the pre-book dialog
     onLocationDenied(); // Execute any other necessary logic
-    window.location.href = "http://localhost:5175/"; // Redirect to the new link
+    window.location.href = "https://dinebuddy.in"; // Redirect to the new link
 };
 
 

@@ -58,7 +58,7 @@ const CreateOrder = ({
   const checkTableStatus = async (tableNum) => {
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/v1/admin/order/${tableNum}`,
+        `https://dinebuddy.in/api/v1/admin/order/${tableNum}`,
         {
           headers: {
             Authorization: localStorage.getItem("authorization"),
@@ -131,7 +131,7 @@ const CreateOrder = ({
       }
 
       const response = await axios.post(
-        "http://localhost:3000/api/v1/admin/orders",
+        "https://dinebuddy.in/api/v1/admin/orders",
         {
           type: orderType,
           tableNumber: orderType === "Dine-In" ? tableNumber : null,

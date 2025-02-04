@@ -78,7 +78,7 @@ const UnifiedAdminOrder = () => {
       setLoading(true);
       try {
         const response = await axios.get(
-          "http://localhost:3000/api/v1/admin/menu",
+          "https://dinebuddy.in/api/v1/admin/menu",
           {
             headers: {
               Authorization: localStorage.getItem("authorization"),
@@ -102,7 +102,7 @@ const UnifiedAdminOrder = () => {
   const fetchRestaurantDetails = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:3000/api/v1/admin/restaurant",
+        "https://dinebuddy.in/api/v1/admin/restaurant",
         {
           headers: {
             Authorization: localStorage.getItem("authorization"),
@@ -135,7 +135,7 @@ const UnifiedAdminOrder = () => {
   const fetchOrders = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:3000/api/v1/admin/orders",
+        "https://dinebuddy.in/api/v1/admin/orders",
         {
           headers: {
             Authorization: localStorage.getItem("authorization"),
@@ -259,7 +259,7 @@ const UnifiedAdminOrder = () => {
       }
 
       const response = await axios.patch(
-        `http://localhost:3000/api/v1/admin/order/${orderId}`,
+        `https://dinebuddy.in/api/v1/admin/order/${orderId}`,
         {
           action: "bulkEdit",
           items: currentOrder.items.map((item) => ({
@@ -304,7 +304,7 @@ const UnifiedAdminOrder = () => {
   const handleMarkAsCompleted = async (orderId) => {
     try {
       const response = await axios.put(
-        `http://localhost:3000/api/v1/admin/order/complete/${orderId}`,
+        `https://dinebuddy.in/api/v1/admin/order/complete/${orderId}`,
         {},
         {
           headers: {
@@ -369,7 +369,7 @@ const UnifiedAdminOrder = () => {
     if (expandedOrder) {
       try {
         const response = await axios.patch(
-          `http://localhost:3000/api/v1/admin/order/${expandedOrder.id}`,
+          `https://dinebuddy.in/api/v1/admin/order/${expandedOrder.id}`,
           {
             action: "removeItem",
             item: { itemId },
@@ -416,7 +416,7 @@ const UnifiedAdminOrder = () => {
       }));
 
       const response = await axios.patch(
-        `http://localhost:3000/api/v1/admin/order/${expandedOrder.id}`,
+        `https://dinebuddy.in/api/v1/admin/order/${expandedOrder.id}`,
         {
           action: "bulkEdit",
           items: formattedItems,
@@ -452,7 +452,7 @@ const UnifiedAdminOrder = () => {
   const handleCheckout = async (orderId) => {
     try {
       const response = await axios.put(
-        `http://localhost:3000/api/v1/admin/order/pay/${orderId}`,
+        `https://dinebuddy.in/api/v1/admin/order/pay/${orderId}`,
         {},
         {
           headers: {
@@ -497,7 +497,7 @@ const UnifiedAdminOrder = () => {
   const handleDeleteOrder = async (orderId) => {
     try {
       const response = await axios.delete(
-        `http://localhost:3000/api/v1/admin/order/${orderId}`,
+        `https://dinebuddy.in/api/v1/admin/order/${orderId}`,
         {
           headers: {
             Authorization: localStorage.getItem("authorization"),
