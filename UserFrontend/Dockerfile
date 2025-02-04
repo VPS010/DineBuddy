@@ -18,7 +18,7 @@ RUN npm install -g serve
 
 COPY --from=builder /app/dist ./dist
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 EXPOSE 5173
 

@@ -1,12 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  server: {
-    allowedHosts: ['dinebuddy.in'],
-    host: '0.0.0.0',
-    port: 5175,
+  build: {
+    outDir: 'dist',
+    minify: 'esbuild', // Ensures faster builds
+    sourcemap: false, // Avoid exposing source code
+  },
+  define: {
+    'process.env': {}, // Ensures process.env works in the frontend
   },
 })

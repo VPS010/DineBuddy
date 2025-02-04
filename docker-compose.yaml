@@ -2,7 +2,6 @@ services:
   reverse-proxy:
     image: traefik:v2.10
     command:
-      - "--api.insecure=true"
       - "--api.dashboard=true"
       - "--providers.docker"
       - "--entrypoints.web.address=:80"
@@ -25,6 +24,8 @@ services:
 
   backend:
     build: ./backend
+    env_file:
+      - ./backend/.env
     networks:
       - servitnet
     depends_on:
@@ -35,8 +36,6 @@ services:
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=le"
       - "traefik.http.services.backend.loadbalancer.server.port=3000"
-    ports:
-      - "3000:3000"
 
   userfrontend:
     build: ./UserFrontend
@@ -49,8 +48,6 @@ services:
       - "traefik.http.middlewares.strip-user-prefix.stripprefix.prefixes=/user/menu"
       - "traefik.http.routers.usermenu.middlewares=strip-user-prefix"
       - "traefik.http.services.usermenu.loadbalancer.server.port=5173"
-    ports:
-      - "5173:5173"
     networks:
       - servitnet
 
@@ -63,17 +60,13 @@ services:
       - "traefik.http.routers.adminrouter.tls.certresolver=le"
       - "traefik.http.routers.adminrouter.priority=1" # Lower priority
       - "traefik.http.services.adminservice.loadbalancer.server.port=5175"
-    ports:
-      - "5175:5175"
     networks:
       - servitnet
 
   mongoDB:
-    image: mongo:latest
+    image: mongo:8.0.4-noble
     networks:
       - servitnet
-    ports:
-      - "27017:27017"
     volumes:
       - mongo-data:/data/db
 
