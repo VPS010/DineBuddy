@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { motion } from "framer-motion";
 import { QrCode, X } from "lucide-react";
@@ -6,6 +6,8 @@ import { QrCode, X } from "lucide-react";
 const QRScannerModal = ({ isOpen, onClose, onScan }) => {
   const [error, setError] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const readerRef = useRef(null);
+  const scannerRef = useRef(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -18,50 +20,58 @@ const QRScannerModal = ({ isOpen, onClose, onScan }) => {
   }, []);
 
   useEffect(() => {
-    let html5QrCode;
+    const initializeScanner = async () => {
+      if (isOpen && readerRef.current) {
+        try {
+          scannerRef.current = new Html5Qrcode(readerRef.current.id);
 
-    if (isOpen) {
-      html5QrCode = new Html5Qrcode("reader");
+          const qrConfig = {
+            fps: 10,
+            qrbox: {
+              width: isMobile ? Math.min(250, window.innerWidth - 64) : 300,
+              height: isMobile ? Math.min(250, window.innerWidth - 64) : 300,
+            },
+          };
 
-      const qrConfig = {
-        fps: 10,
-        qrbox: {
-          width: isMobile ? Math.min(250, window.innerWidth - 64) : 300,
-          height: isMobile ? Math.min(250, window.innerWidth - 64) : 300,
-        },
-      };
-
-      html5QrCode
-        .start(
-          { facingMode: "environment" },
-          qrConfig,
-          (decodedText) => {
-            html5QrCode.stop();
-            onScan(decodedText);
-          },
-          (errorMessage) => {
-            if (errorMessage.includes("NotFoundError")) {
-              setError(
-                "Camera not found. Please ensure you have a working camera."
-              );
-            } else if (errorMessage.includes("NotAllowedError")) {
-              setError(
-                "Camera permission denied. Please allow camera access to scan QR codes."
-              );
-            } else {
-              console.error(errorMessage);
+          await scannerRef.current.start(
+            { facingMode: "environment" },
+            qrConfig,
+            (decodedText) => {
+              scannerRef.current.stop();
+              onScan(decodedText);
+            },
+            (errorMessage) => {
+              if (errorMessage.includes("NotFoundError")) {
+                setError(
+                  "Camera not found. Please ensure you have a working camera."
+                );
+              } else if (errorMessage.includes("NotAllowedError")) {
+                setError(
+                  "Camera permission denied. Please allow camera access."
+                );
+              } else if (!errorMessage.includes("No QR code found")) {
+                setError("Camera error: " + errorMessage);
+              }
             }
-          }
-        )
-        .catch((err) => {
-          setError("Error starting camera. Please try again.");
-          console.error(err);
-        });
-    }
+          );
+        } catch (err) {
+          setError(
+            "Failed to initialize scanner. Please refresh and try again."
+          );
+          console.error("Scanner error:", err);
+        }
+      }
+    };
+
+    initializeScanner();
 
     return () => {
-      if (html5QrCode?.isScanning) {
-        html5QrCode.stop().catch(console.error);
+      if (scannerRef.current?.isScanning) {
+        scannerRef.current.stop().catch((err) => {
+          if (!err.message.includes("Scanner is not running")) {
+            console.error("Error stopping scanner:", err);
+          }
+        });
       }
     };
   }, [isOpen, onScan, isMobile]);
@@ -96,16 +106,19 @@ const QRScannerModal = ({ isOpen, onClose, onScan }) => {
           {error ? (
             <div className="absolute inset-0 flex items-center justify-center text-red-500 p-3 md:p-4 text-center text-xs md:text-base">
               {error}
+              <br />
+              {error.includes("permission") && (
+                <span className="text-xs text-gray-600 block mt-2">
+                  (Check browser settings or try in a different browser)
+                </span>
+              )}
             </div>
           ) : (
             <>
-              <div id="reader" className="w-full h-full" />
+              <div ref={readerRef} id="reader" className="w-full h-full" />
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute inset-3 md:inset-8 border-2 border-white rounded-lg opacity-80">
-                  <div className="absolute -top-2 -left-2 md:-top-3 md:-left-3 w-6 h-6 md:w-8 md:h-8 border-t-2 md:border-t-4 border-l-2 md:border-l-4 border-blue-500 rounded-tl-lg" />
-                  <div className="absolute -top-2 -right-2 md:-top-3 md:-right-3 w-6 h-6 md:w-8 md:h-8 border-t-2 md:border-t-4 border-r-2 md:border-r-4 border-blue-500 rounded-tr-lg" />
-                  <div className="absolute -bottom-2 -left-2 md:-bottom-3 md:-left-3 w-6 h-6 md:w-8 md:h-8 border-b-2 md:border-b-4 border-l-2 md:border-l-4 border-blue-500 rounded-bl-lg" />
-                  <div className="absolute -bottom-2 -right-2 md:-bottom-3 md:-right-3 w-6 h-6 md:w-8 md:h-8 border-b-2 md:border-b-4 border-r-2 md:border-r-4 border-blue-500 rounded-br-lg" />
+                  {/* Scanner frame decorations */}
                 </div>
               </div>
             </>
@@ -116,4 +129,35 @@ const QRScannerModal = ({ isOpen, onClose, onScan }) => {
   );
 };
 
-export default QRScannerModal;
+// Error Boundary Component (Add this at the bottom of your file)
+class ErrorBoundary extends React.Component {
+  state = { hasError: false };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("QR Scanner Error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="text-red-500 p-4 text-center">
+          Scanner failed to load. Please refresh the page.
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Export with Error Boundary
+export default function SafeQRScannerModal(props) {
+  return (
+    <ErrorBoundary>
+      <QRScannerModal {...props} />
+    </ErrorBoundary>
+  );
+}
