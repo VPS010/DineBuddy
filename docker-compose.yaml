@@ -2,12 +2,12 @@ services:
   reverse-proxy:
     image: traefik:v3.1
     command:
-      - "--api. insecure=true"
+      - "--api.insecure=true"
       - "--providers.docker"
     ports:
       # The HTTP Port
       - "80:80"
-      # The Web UI (enabled by --api. insecure=true)
+      # The Web UI (enabled by --api.insecure=true)
       - "8080:8080"
     volumes:
       # So that Traefik can listen to Docker events
