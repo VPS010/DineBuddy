@@ -21,7 +21,7 @@ const KitchenScreen = () => {
       }
 
       const response = await axios.get(
-        "http://localhost:3000/api/v1/admin/orders/kitchen",
+        "https://dinebuddy.in/api/v1/admin/orders/kitchen",
         {
           headers: {
             authorization: localStorage.getItem("authorization"),
@@ -95,7 +95,7 @@ const KitchenScreen = () => {
   const handleItemStatusUpdate = async (orderId, itemId, newStatus) => {
     try {
       const response = await axios.put(
-        `http://localhost:3000/api/v1/admin/orders/${orderId}/${itemId}`,
+        `https://dinebuddy.in/api/v1/admin/orders/${orderId}/${itemId}`,
         { status: newStatus },
         {
           headers: {
