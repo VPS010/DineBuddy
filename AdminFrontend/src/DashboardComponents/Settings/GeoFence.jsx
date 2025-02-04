@@ -143,7 +143,7 @@ const GeoFenceSelector = () => {
       const token = localStorage.getItem("authorization");
 
       const response = await axios.put(
-        "http://localhost:3000/api/v1/admin/restaurant",
+        "https://dinebuddy.in/api/v1/admin/restaurant",
         updateData,
         {
           headers: {
