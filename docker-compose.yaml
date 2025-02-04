@@ -1,23 +1,25 @@
 services:
   reverse-proxy:
-    image: traefik:v3.1
+    image: traefik:v2.10
     command:
       - "--api.insecure=true"
+      - "--api.dashboard=true"
       - "--providers.docker"
-      # Define the HTTPS entrypoint on port 443
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
-      # Enable automatic certificate generation using TLS challenge
       - "--certificatesresolvers.le.acme.tlschallenge=true"
       - "--certificatesresolvers.le.acme.email=hellodinebuddy@gmail.com"
       - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
     ports:
-      # Expose only port 443 for HTTPS traffic
+      - "80:80"
       - "443:443"
     volumes:
-      # So that Traefik can listen to Docker events
       - /var/run/docker.sock:/var/run/docker.sock
-      # Persist Let's Encrypt certificates
       - ./letsencrypt:/letsencrypt
+    networks:
+      - servitnet 
 
   backend:
     build: ./backend
@@ -30,12 +32,9 @@ services:
     build: ./UserFrontend
     labels:
       - "traefik.enable=true"
-      # Only route requests to dinebuddy.in/user/menu to this container
       - "traefik.http.routers.usermenu.rule=Host(`dinebuddy.in`) && PathPrefix(`/user/menu`)"
-      # Use the secure entrypoint (443)
       - "traefik.http.routers.usermenu.entrypoints=websecure"
       - "traefik.http.routers.usermenu.priority=10"
-      # Use the ACME resolver for SSL certificates
       - "traefik.http.routers.usermenu.tls.certresolver=le"
       - "traefik.http.services.usermenu.loadbalancer.server.port=5173"
     networks:
@@ -45,13 +44,10 @@ services:
     build: ./AdminFrontend
     labels:
       - "traefik.enable=true"
-      # Route all requests to dinebuddy.in to this container (if no more specific rule is present)
-      - "traefik.http.routers.guestbook.rule=Host(`dinebuddy.in`)"
-      # Use the secure entrypoint (443)
-      - "traefik.http.routers.guestbook.entrypoints=websecure"
-      # Use the ACME resolver for SSL certificates
-      - "traefik.http.routers.guestbook.tls.certresolver=le"
-      - "traefik.http.services.guestbook.loadbalancer.server.port=5175"
+      - "traefik.http.routers.adminrouter.rule=Host(`dinebuddy.in`)"
+      - "traefik.http.routers.adminrouter.entrypoints=websecure"
+      - "traefik.http.routers.adminrouter.tls.certresolver=le"
+      - "traefik.http.services.adminrouter.loadbalancer.server.port=5175"
     networks:
       - servitnet
 
@@ -61,12 +57,6 @@ services:
       - servitnet
     volumes:
       - mongo-data:/data/db
-    # REMOVE PORTS if backend runs in the same network
-    # ports:
-    #   - "27017:27017"
-    deploy:
-      mode: replicated
-      replicas: 1 # Set to 1 unless using a replica set
 
 networks:
   servitnet:
