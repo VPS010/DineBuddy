@@ -6,7 +6,7 @@ const generateQRcode = (restaurantId, tableNumber) => {
             reject('Table number and restaurant ID are required.');
         }
 
-        const menuUrl = `http://localhost:5173/user/menu/${restaurantId}?table=${tableNumber}`;
+        const menuUrl = `https://dinebuddy.in/user/menu/${restaurantId}?table=${tableNumber}`;
 
         QRCode.toDataURL(menuUrl, (err, qrCodeData) => {
             if (err) {
