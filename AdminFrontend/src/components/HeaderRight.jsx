@@ -29,7 +29,7 @@ const HeaderRight = () => {
   useEffect(() => {
     const fetchUnpaidOrders = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/v1/admin/orders", {
+        const response = await fetch("https://dinebuddy.in/api/v1/admin/orders", {
           headers: {
             Authorization: localStorage.getItem("authorization"),
           },
