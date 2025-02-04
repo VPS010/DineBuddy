@@ -8,7 +8,7 @@ services:
       - "--entrypoints.websecure.address=:443"
       # Enable automatic certificate generation using TLS challenge
       - "--certificatesresolvers.le.acme.tlschallenge=true"
-      - "--certificatesresolvers.le.acme.email=your-email@example.com"
+      - "--certificatesresolvers.le.acme.email=dinebuddy.in"
       - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
     ports:
       # Expose only port 443 for HTTPS traffic
