@@ -13,8 +13,6 @@ services:
     ports:
       # Expose only port 443 for HTTPS traffic
       - "443:443"
-      # Expose the Traefik dashboard (if needed)
-      - "8080:8080"
     volumes:
       # So that Traefik can listen to Docker events
       - /var/run/docker.sock:/var/run/docker.sock
@@ -23,8 +21,6 @@ services:
 
   backend:
     build: ./backend
-    ports:
-      - "3000:3000"
     networks:
       - servitnet
     depends_on:
@@ -42,8 +38,6 @@ services:
       # Use the ACME resolver for SSL certificates
       - "traefik.http.routers.usermenu.tls.certresolver=le"
       - "traefik.http.services.usermenu.loadbalancer.server.port=5173"
-    ports:
-      - "5173:5173" # (Optional) Direct container mapping if needed
     networks:
       - servitnet
 
@@ -58,22 +52,21 @@ services:
       # Use the ACME resolver for SSL certificates
       - "traefik.http.routers.guestbook.tls.certresolver=le"
       - "traefik.http.services.guestbook.loadbalancer.server.port=5175"
-    ports:
-      - "5175:5175" # (Optional) Direct container mapping if needed
     networks:
       - servitnet
 
   mongoDB:
     image: mongo:latest
-    ports:
-      - "27017:27017"
     networks:
       - servitnet
     volumes:
       - mongo-data:/data/db
+    # REMOVE PORTS if backend runs in the same network
+    # ports:
+    #   - "27017:27017"
     deploy:
       mode: replicated
-      replicas: 3
+      replicas: 1  # Set to 1 unless using a replica set
 
 networks:
   servitnet:
