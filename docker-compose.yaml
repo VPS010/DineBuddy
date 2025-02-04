@@ -4,14 +4,22 @@ services:
     command:
       - "--api.insecure=true"
       - "--providers.docker"
+      # Define the HTTPS entrypoint on port 443
+      - "--entrypoints.websecure.address=:443"
+      # Enable automatic certificate generation using TLS challenge
+      - "--certificatesresolvers.le.acme.tlschallenge=true"
+      - "--certificatesresolvers.le.acme.email=your-email@example.com"
+      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
     ports:
-      # The HTTP Port
-      - "80:80"
-      # The Web UI (enabled by --api.insecure=true)
+      # Expose only port 443 for HTTPS traffic
+      - "443:443"
+      # Expose the Traefik dashboard (if needed)
       - "8080:8080"
     volumes:
       # So that Traefik can listen to Docker events
       - /var/run/docker.sock:/var/run/docker.sock
+      # Persist Let's Encrypt certificates
+      - ./letsencrypt:/letsencrypt
 
   backend:
     build: ./backend
@@ -26,12 +34,16 @@ services:
     build: ./UserFrontend
     labels:
       - "traefik.enable=true"
+      # Only route requests to dinebuddy.in/user/menu to this container
       - "traefik.http.routers.usermenu.rule=Host(`dinebuddy.in`) && PathPrefix(`/user/menu`)"
-      - "traefik.http.routers.usermenu.entrypoints=web"
+      # Use the secure entrypoint (443)
+      - "traefik.http.routers.usermenu.entrypoints=websecure"
       - "traefik.http.routers.usermenu.priority=10"
+      # Use the ACME resolver for SSL certificates
+      - "traefik.http.routers.usermenu.tls.certresolver=le"
       - "traefik.http.services.usermenu.loadbalancer.server.port=5173"
     ports:
-      - "5173:5173"
+      - "5173:5173" # (Optional) Direct container mapping if needed
     networks:
       - servitnet
 
@@ -39,11 +51,15 @@ services:
     build: ./AdminFrontend
     labels:
       - "traefik.enable=true"
+      # Route all requests to dinebuddy.in to this container (if no more specific rule is present)
       - "traefik.http.routers.guestbook.rule=Host(`dinebuddy.in`)"
-      - "traefik.http.routers.guestbook.entrypoints=web"
+      # Use the secure entrypoint (443)
+      - "traefik.http.routers.guestbook.entrypoints=websecure"
+      # Use the ACME resolver for SSL certificates
+      - "traefik.http.routers.guestbook.tls.certresolver=le"
       - "traefik.http.services.guestbook.loadbalancer.server.port=5175"
     ports:
-      - "5175:5175"
+      - "5175:5175" # (Optional) Direct container mapping if needed
     networks:
       - servitnet
 
@@ -55,6 +71,9 @@ services:
       - servitnet
     volumes:
       - mongo-data:/data/db
+    deploy:
+      mode: replicated
+      replicas: 3
 
 networks:
   servitnet:
@@ -63,3 +82,4 @@ networks:
 volumes:
   mongo-data:
     driver: local
+  letsencrypt:
